@@ -33,11 +33,33 @@ from OpenOversight.app.utils.general import normalize_gender, prompt_yes_no, str
 
 
 @click.command()
+@click.option(
+    "-u",
+    "--username",
+    "supplied_username",
+    help="username for the admin account",
+)
+@click.option(
+    "-e",
+    "--email",
+    "supplied_email",
+    help="email for the admin account",
+)
+@click.option(
+    "-p",
+    "--password",
+    "supplied_password",
+    help="password for the admin account",
+)
 @with_appcontext
-def make_admin_user():
+def make_admin_user(
+    supplied_username: str | None,
+    supplied_email: str | None,
+    supplied_password: str | None,
+):
     """Add confirmed administrator account."""
     while True:
-        username = input("Username: ")
+        username = supplied_username or input("Username: ")
         user = User.by_username(username).one_or_none()
         if user:
             print("Username is already in use")
@@ -45,7 +67,7 @@ def make_admin_user():
             break
 
     while True:
-        email = input("Email: ")
+        email = supplied_email or input("Email: ")
         user = User.by_email(email).one_or_none()
         if user:
             print("Email address already in use")
@@ -53,8 +75,8 @@ def make_admin_user():
             break
 
     while True:
-        password = getpass("Password: ")
-        password_again = getpass("Type your password again: ")
+        password = supplied_password or getpass("Password: ")
+        password_again = supplied_password or getpass("Type your password again: ")
 
         if password == password_again:
             break

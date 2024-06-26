@@ -15,12 +15,11 @@ This repository represents the **Seattle fork** of the original project. For mor
 
 To run the project locally:
 1. [Install `just`](https://github.com/casey/just)
-2. Run `just fresh-start` to spin up the database and insert the initial data. **This will prompt you for information to create a local super-admin user.** Enter this information for the following fields:
+2. Run `just fresh-start` to spin up the database and insert the initial data. **This will create a local super-admin user for you** with the following information:
    1. `Username`: `admin`
    2. `Email`: `admin@admin.com`
    3. `Password`: `admin`
-   4. `Commit changes?`: `y`
-3. Run `just up` and visit http://localhost:3000!
+3. Visit http://localhost:3000!
 
 To re-generate the poetry lock file (if you need to update dependencies in pyproject.toml):
 1. Run `just lock`
