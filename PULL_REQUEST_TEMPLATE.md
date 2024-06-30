@@ -4,7 +4,9 @@
 
 ## Screenshots (if appropriate)
 
-## Tests and linting
+## Testing instructions
+
+## Checks
 
  - [ ] I have rebased my changes on `main`
 
