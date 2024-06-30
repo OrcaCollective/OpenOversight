@@ -67,7 +67,7 @@ fresh-start: dotenv
 	# Populate users and data
 	{{ RUN_WEB }} flask make-admin-user
 	{{ RUN_WEB }} flask add-department "Seattle Police Department" "SPD" "WA"
-	{{ RUN_WEB }} flask bulk-add-officers /data/init_data.csv
+	{{ RUN_WEB }} flask bulk-add-officers -y /data/init_data.csv
 
 	# Start containers
 	@just up

@@ -469,8 +469,17 @@ def process_salary(row, officer, compare=False):
     is_flag=True,
     help="allow updating normally-static fields like race, birth year, etc.",
 )
+@click.option(
+    "--yes",
+    "-y",
+    "bypass_prompt",
+    is_flag=True,
+    help="bypass the user prompt and immediately add the officers to the database",
+)
 @with_appcontext
-def bulk_add_officers(filename, no_create, update_by_name, update_static_fields):
+def bulk_add_officers(
+    filename, no_create, update_by_name, update_static_fields, bypass_prompt
+):
     """Add or update officers from a CSV file."""
 
     encoding = ENCODING_UTF_8
@@ -551,8 +560,10 @@ def bulk_add_officers(filename, no_create, update_by_name, update_static_fields)
                 create_officer_from_row(row, department_id)
 
         ImportLog.print_logs()
-        if current_app.config["ENV"] == "testing" or prompt_yes_no(
-            "Do you want to commit the above changes?"
+        if (
+            current_app.config["ENV"] == "testing"
+            or bypass_prompt
+            or prompt_yes_no("Do you want to commit the above changes?")
         ):
             print("Commiting changes.")
             db.session.commit()
