@@ -3,7 +3,7 @@ COMPOSE_FILE := "--file=docker-compose.yml" + (
     if IS_PROD == "true" {" --file=docker-compose.prod.yml"}
     else {" --file=docker-compose.dev.yml"}
 )
-DC := "docker-compose " + COMPOSE_FILE
+DC := "docker compose " + COMPOSE_FILE
 RUN := DC + " run --rm"
 RUN_WEB := RUN + " web"
 set dotenv-load := false
