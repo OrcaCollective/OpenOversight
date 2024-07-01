@@ -7,7 +7,7 @@ COPY OpenOversight/app/static/ OpenOversight/app/static/
 RUN yarn build
 
 
-FROM python:3.12.3-slim as base
+FROM python:3.12.4-slim as base
 ARG IS_PROD
 ENV DEBIAN_FRONTEND noninteractive
 ENV PIP_NO_CACHE_DIR=1
