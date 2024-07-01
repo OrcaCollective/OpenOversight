@@ -1,6 +1,6 @@
 {
   "devDependencies": {
-    "sass": "^1.77.4"
+    "sass": "^1.77.6"
   },
   "license": "GPL-3.0-only",
   "name": "openoversight",
