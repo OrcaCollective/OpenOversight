@@ -35,7 +35,7 @@ wtforms = "3.1.2"
 wtforms-sqlalchemy = "0.3"
 
 [tool.poetry.group.dev.dependencies]
-faker = "24.4.0"
+faker = "26.0.0"
 flake8 = "7.0.0"
 ipython = "^8.24.0"
 mypy = "1.10.1"
