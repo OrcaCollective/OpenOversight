@@ -1,6 +1,5 @@
 import random
 import sys
-from distutils.util import strtobool
 from typing import Optional, Union
 from urllib.parse import urlparse
 from zoneinfo import available_timezones
@@ -28,6 +27,20 @@ def allowed_file(filename: str) -> bool:
         and filename.rsplit(".", 1)[1].lower()
         in current_app.config[KEY_ALLOWED_EXTENSIONS]
     )
+
+
+def strtobool(val: str) -> bool:
+    # Implemented based on distutils strtobool documentation
+    # https://docs.python.org/3.8/distutils/apiref.html#distutils.util.strtobool
+    val = str(val).lower()
+
+    if val in ["y", "yes", "t", "true", "on", "1"]:
+        return True
+
+    if val in ["n", "no", "f", "false", "off", "0"]:
+        return False
+
+    raise ValueError(f"string cannot be converted to boolean: {val}")
 
 
 # This function is also used in the `utils/forms.py` file, so there's potential

@@ -11,8 +11,9 @@ build_with_version: create_empty_secret
 	docker-compose build --build-arg MAKE_PYTHON_VERSION=$(PYTHON_VERSION)
 
 .PHONY: test_with_version
-test_with_version: build_with_version assets
-	ENV=testing docker-compose run --rm web pytest --cov=OpenOversight --cov-report xml:OpenOversight/tests/coverage.xml --doctest-modules -n 4 --dist=loadfile -v OpenOversight/tests/
+test_with_version: build_with_version
+	touch OpenOversight/tests/coverage.xml
+	docker compose run --rm web-test pytest --cov=OpenOversight --cov-report xml:OpenOversight/tests/coverage.xml --doctest-modules -n 4 --dist=loadfile -v OpenOversight/tests/
 
 .PHONY: start
 start: build ## Run containers
@@ -27,10 +28,6 @@ create_db: start
 	@echo "Postgres is up"
 	## Creating database
 	docker-compose run --rm web python ../create_db.py
-
-.PHONY: assets
-assets:
-	docker-compose run --rm web yarn build
 
 .PHONY: dev
 dev: create_empty_secret build start create_db populate
@@ -61,17 +58,13 @@ test: start ## Run tests
 lint:
 	docker-compose run --no-deps --rm web /bin/bash -c 'flake8; mypy app --config="../mypy.ini"'
 
-.PHONY: clean_assets
-clean_assets:
-	rm -rf ./OpenOversight/app/static/dist/
-
 .PHONY: stop
 stop: ## Stop containers
 	docker-compose stop
 
 .PHONY: clean
 clean: clean_assets stop ## Remove containers
-	docker-compose rm -f
+	docker compose rm -f
 
 .PHONY: clean_all
 clean_all: clean stop ## Wipe database

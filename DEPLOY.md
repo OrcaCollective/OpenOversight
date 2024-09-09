@@ -121,7 +121,6 @@ For more details about the S3 and AWS settings, see above. Please raise an issue
 1. `dc run --rm web flask make-admin-user`
 1. `dc run --rm web flask add-department "Seattle Police Department" "SPD"`
 1. `dc run --rm web flask bulk-add-officers /data/init_data.csv`
-1. `dc run --rm web npm run-script build`
 
 # Data ingestion
 

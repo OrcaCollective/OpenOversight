@@ -1,12 +1,3 @@
-# node layer to build static assets
-FROM node:22 AS nodejs
-WORKDIR /usr/src/app/
-COPY package.json yarn.lock ./
-RUN yarn install
-COPY OpenOversight/app/static/ OpenOversight/app/static/
-RUN yarn build
-
-
 FROM python:3.12.5-slim as base
 ARG IS_PROD
 ENV DEBIAN_FRONTEND noninteractive
@@ -42,7 +33,6 @@ RUN if [ "$IS_PROD" = "true" ]; then \
 # Setup application
 COPY create_db.py .
 COPY OpenOversight OpenOversight
-COPY --from=nodejs /usr/src/app/OpenOversight/app/static/dist/ OpenOversight/app/static/dist/
 
 CMD if [ "$IS_PROD" = "true" ]; then \
         gunicorn -w 4 -b 0.0.0.0:3000 OpenOversight.app:app; \

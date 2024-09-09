@@ -2,4 +2,3 @@ backup/**
 container_data
 .cache
 node_modules
-OpenOversight/app/static/dist/*

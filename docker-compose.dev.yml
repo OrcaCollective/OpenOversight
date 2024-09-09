@@ -51,11 +51,8 @@ services:
       - ./poetry.lock:/usr/src/app/poetry.lock
       - ./pyproject.toml:/usr/src/app/pyproject.toml
       - ./OpenOversight:/usr/src/app/OpenOversight
-      - oo-assets:/usr/src/app/OpenOversight/app/static/dist
     ports:
       - "3000:3000"
 
 volumes:
   minio:
-  # Prevent bind mount from overwriting assets: https://stackoverflow.com/q/57065750
-  oo-assets:
