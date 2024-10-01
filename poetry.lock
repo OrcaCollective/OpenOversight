@@ -828,18 +828,18 @@ flask = "*"
 
 [[package]]
 name = "flask-limiter"
-version = "3.3.1"
+version = "3.8.0"
 description = "Rate limiting for flask applications"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "Flask-Limiter-3.3.1.tar.gz", hash = "sha256:2b99fec0cfc44f490bd729da52bb89c5c4158f38812d0f3854c01d0a83664923"},
-    {file = "Flask_Limiter-3.3.1-py3-none-any.whl", hash = "sha256:3451fb8d84f50007753b799831c57c59c1eb3432cc9754cc4b7e41a88d8bdf51"},
+    {file = "Flask_Limiter-3.8.0-py3-none-any.whl", hash = "sha256:0ab44f586d8cc349412791711b6cbafe8f86e7b60ad9e8f24f2686009f00900e"},
+    {file = "flask_limiter-3.8.0.tar.gz", hash = "sha256:686f8b4a75404e47b91565a795c70d29f69c145f6907f1f32522e962b134dada"},
 ]
 
 [package.dependencies]
 Flask = ">=2"
-limits = ">=2.8"
+limits = ">=3.13"
 ordered-set = ">4,<5"
 rich = ">=12,<14"
 typing-extensions = ">=4"
@@ -1395,13 +1395,13 @@ files = [
 
 [[package]]
 name = "limits"
-version = "3.12.0"
+version = "3.13.0"
 description = "Rate limiting utilities"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "limits-3.12.0-py3-none-any.whl", hash = "sha256:48d91e94a0888fb1251aa31423d716ae72ceff997231363f7968a5eaa51dc56d"},
-    {file = "limits-3.12.0.tar.gz", hash = "sha256:95764065715a11b9fdcc82558cac2fb59a1febbb7aa2acd045f72ab0c16ec04f"},
+    {file = "limits-3.13.0-py3-none-any.whl", hash = "sha256:9767f7233da4255e9904b79908a728e8ec0984c0b086058b4cbbd309aea553f6"},
+    {file = "limits-3.13.0.tar.gz", hash = "sha256:6571b0c567bfa175a35fed9f8a954c0c92f1c3200804282f1b8f1de4ad98a953"},
 ]
 
 [package.dependencies]
@@ -3234,4 +3234,4 @@ WTForms = ">=1.0.5"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0f6f9ca31c6cec43d23fa63030aa343bbe46689d76e59ac96be6d1efa0dac576"
+content-hash = "e7b70ca049bc3341f434313520594d58a397284c87de0936b02f14fa13c85376"
