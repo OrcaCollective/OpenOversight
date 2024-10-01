@@ -19,6 +19,7 @@ from OpenOversight.app.models.database import (
 )
 from OpenOversight.app.utils.constants import ENCODING_UTF_8
 from OpenOversight.tests.conftest import AC_DEPT
+from OpenOversight.tests.constants import INVALID_ID
 from OpenOversight.tests.routes.route_helpers import login_ac, login_admin, login_user
 
 
@@ -54,6 +55,14 @@ def test_route_login_required(route, client, mockdata):
     assert rv.status_code == HTTPStatus.FOUND
 
 
+def test_invalid_department_image_sorting(client, session):
+    with current_app.test_request_context():
+        login_user(client)
+
+        rv = client.get(url_for("main.sort_images", department_id=INVALID_ID))
+        assert rv.status_code == HTTPStatus.NOT_FOUND
+
+
 # POST-only routes
 @pytest.mark.parametrize(
     "route",
@@ -79,6 +88,16 @@ def test_logged_in_user_can_access_sort_form(mockdata, client, session):
         assert b"Do you see uniformed law enforcement officers in the photo" in rv.data
 
 
+def test_invalid_officer_id_display_submission(client, session):
+    with current_app.test_request_context():
+        login_admin(client)
+
+        rv = client.get(
+            url_for("main.display_submission", image_id=INVALID_ID),
+        )
+        assert rv.status_code == HTTPStatus.NOT_FOUND
+
+
 def test_user_can_view_submission(mockdata, client, session):
     with current_app.test_request_context():
         login_user(client)
@@ -87,6 +106,14 @@ def test_user_can_view_submission(mockdata, client, session):
             url_for("main.display_submission", image_id=1), follow_redirects=True
         )
         assert b"Image ID" in rv.data
+
+
+def test_invalid_tag_id_display_tag(client, session):
+    with current_app.test_request_context():
+        login_user(client)
+
+        rv = client.get(url_for("main.display_tag", tag_id=INVALID_ID))
+        assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
 def test_user_can_view_tag(mockdata, client, session):
@@ -99,6 +126,14 @@ def test_user_can_view_tag(mockdata, client, session):
         # Check that tag frame position is specified
         for attribute in (b"data-top", b"data-left", b"data-width", b"data-height"):
             assert attribute in rv.data
+
+
+def test_invalid_id_delete_tag(mockdata, client, session):
+    with current_app.test_request_context():
+        login_admin(client)
+
+        rv = client.post(url_for("main.delete_tag", tag_id=INVALID_ID))
+        assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
 def test_admin_can_delete_tag(mockdata, client, session):
@@ -330,7 +365,15 @@ def test_user_cannot_tag_officer_mismatched_with_department(mockdata, client, se
         ) in rv.data
 
 
-def test_user_can_finish_tagging(mockdata, client, session):
+def test_invalid_id_complete_tagging(client, session):
+    with current_app.test_request_context():
+        login_user(client)
+
+        rv = client.get(url_for("main.complete_tagging", image_id=INVALID_ID))
+        assert rv.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_complete_tagging(mockdata, client, session):
     with current_app.test_request_context():
         _, user = login_user(client)
         image_id = 4
@@ -369,6 +412,16 @@ def test_user_is_redirected_to_correct_department_after_tagging(
 
         assert rv.status_code == HTTPStatus.OK
         assert department.name in rv.data.decode(ENCODING_UTF_8)
+
+
+def test_invalid_id_set_featured_tag(mockdata, client, session):
+    with current_app.test_request_context():
+        login_admin(client)
+
+        rv = client.post(
+            url_for("main.set_featured_tag", tag_id=INVALID_ID), follow_redirects=True
+        )
+        assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
 def test_user_can_set_featured_tag(mockdata, client, session):
