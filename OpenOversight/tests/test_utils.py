@@ -280,14 +280,12 @@ def test_save_image_to_s3_and_db_saves_filename_in_correct_format(
             assert len(filename_parts) == 2
 
 
-def test_save_image_to_s3_and_db_invalid_image(mockdata, client):
+def test_save_image_to_s3_and_db_invalid_image(client):
     with pytest.raises(ValueError):
         save_image_to_s3_and_db(BytesIO(b"invalid-image"), 1, 1)
 
 
-def test_save_image_to_s3_and_db_unrecognized_format(
-    mockdata, test_tiff_bytes_io, client
-):
+def test_save_image_to_s3_and_db_unrecognized_format(test_tiff_bytes_io, client):
     with pytest.raises(ValueError):
         save_image_to_s3_and_db(test_tiff_bytes_io, 1, 1)
 

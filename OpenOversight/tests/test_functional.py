@@ -97,7 +97,7 @@ def test_user_can_load_homepage_and_get_to_form(mockdata, browser, server_port):
 
 
 @pytest.mark.xdist_group
-def test_user_can_get_to_complaint(mockdata, browser, server_port):
+def test_user_can_get_to_complaint(browser, server_port):
     browser.get(
         f"http://localhost:{server_port}/complaints?officer_star=6265&"
         "officer_first_name=IVANA&officer_last_name=SNOTBALL&officer_middle_initial="
@@ -283,7 +283,7 @@ def test_click_to_read_more_hides_the_read_more_button(mockdata, browser, server
 
 
 @pytest.mark.xdist_group
-def test_officer_form_has_units_alpha_sorted(mockdata, browser, server_port, session):
+def test_officer_form_has_units_alpha_sorted(browser, server_port, session):
     login_admin(browser, server_port)
 
     # get the units from the DB in the sort we expect
@@ -309,7 +309,7 @@ def test_officer_form_has_units_alpha_sorted(mockdata, browser, server_port, ses
 
 @pytest.mark.xdist_group
 def test_edit_officer_form_coerces_none_race_or_gender_to_not_sure(
-    mockdata, browser, server_port, session
+    browser, server_port, session
 ):
     # Set NULL race and gender for officer 1
     session.execute(

@@ -100,7 +100,7 @@ def test_routes_ok(route, client, mockdata):
         "/units/new",
     ],
 )
-def test_route_login_required(route, client, mockdata):
+def test_route_login_required(route, client):
     rv = client.get(route)
     assert rv.status_code == HTTPStatus.FOUND
 
@@ -112,18 +112,18 @@ def test_route_login_required(route, client, mockdata):
         "/officers/3/assignments/new",
     ],
 )
-def test_route_post_only(route, client, mockdata):
+def test_route_post_only(route, client):
     rv = client.get(route)
     assert rv.status_code == HTTPStatus.METHOD_NOT_ALLOWED
 
 
-def test_invalid_id_officer_profile(mockdata, client, session):
+def test_invalid_id_officer_profile(client, session):
     with current_app.test_request_context():
         rv = client.get(url_for("main.officer_profile", officer_id=400000))
         assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_user_can_access_officer_profile(mockdata, client, session):
+def test_user_can_access_officer_profile(client, session):
     with current_app.test_request_context():
         rv = client.get(
             url_for("main.officer_profile", officer_id=3), follow_redirects=True
@@ -137,7 +137,7 @@ def test_invalid_officer_id_officer_list(client, session):
         assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_user_can_access_officer_list(mockdata, client, session):
+def test_user_can_access_officer_list(client, session):
     with current_app.test_request_context():
         rv = client.get(url_for("main.list_officer", department_id=2))
 
@@ -154,7 +154,7 @@ def test_user_can_access_officer_list(mockdata, client, session):
     ],
 )
 def test_officer_appropriately_shows_placeholder(
-    filter_func, has_placeholder, mockdata, client, session
+    filter_func, has_placeholder, client, session
 ):
     with current_app.test_request_context():
         officer = Officer.query.filter(filter_func(Officer.face.any())).first()
@@ -168,7 +168,7 @@ def test_officer_appropriately_shows_placeholder(
         assert (placeholder in rv.data.decode(ENCODING_UTF_8)) == has_placeholder
 
 
-def test_ac_can_access_admin_on_dept_officer_profile(mockdata, client, session):
+def test_ac_can_access_admin_on_dept_officer_profile(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -180,7 +180,7 @@ def test_ac_can_access_admin_on_dept_officer_profile(mockdata, client, session):
         assert "Admin only" in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_ac_cannot_access_admin_on_non_dept_officer_profile(mockdata, client, session):
+def test_ac_cannot_access_admin_on_non_dept_officer_profile(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.except_(
@@ -194,7 +194,7 @@ def test_ac_cannot_access_admin_on_non_dept_officer_profile(mockdata, client, se
         assert "Admin only" not in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_invalid_officer_id_add_assignment(mockdata, client, session):
+def test_invalid_officer_id_add_assignment(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -204,7 +204,7 @@ def test_invalid_officer_id_add_assignment(mockdata, client, session):
         assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_admin_can_add_assignment(mockdata, client, session):
+def test_admin_can_add_assignment(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -233,7 +233,7 @@ def test_admin_can_add_assignment(mockdata, client, session):
         assert assignment.resign_date == date(2019, 12, 31)
 
 
-def test_admin_add_assignment_validation_error(mockdata, client, session):
+def test_admin_add_assignment_validation_error(client, session):
     with current_app.test_request_context():
         login_admin(client)
         officer = session.get(Officer, 3)
@@ -258,7 +258,7 @@ def test_admin_add_assignment_validation_error(mockdata, client, session):
         assert assignments is None
 
 
-def test_ac_can_add_assignment_in_their_dept(mockdata, client, session):
+def test_ac_can_add_assignment_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -290,7 +290,7 @@ def test_ac_can_add_assignment_in_their_dept(mockdata, client, session):
         assert assignment.resign_date == date(2019, 12, 31)
 
 
-def test_ac_cannot_add_non_dept_assignment(mockdata, client, session):
+def test_ac_cannot_add_non_dept_assignment(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -323,7 +323,7 @@ def test_invalid_officer_id_edit_assignment(client, session):
         assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_admin_can_edit_assignment(mockdata, client, session):
+def test_admin_can_edit_assignment(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -385,7 +385,7 @@ def test_admin_can_edit_assignment(mockdata, client, session):
 
 
 def test_admin_edit_assignment_validation_error(
-    mockdata, client, session, officer_no_assignments
+    client, session, officer_no_assignments
 ):
     with current_app.test_request_context():
         login_admin(client)
@@ -426,7 +426,7 @@ def test_admin_edit_assignment_validation_error(
         assert assignment.resign_date == date(2019, 12, 31)
 
 
-def test_ac_can_edit_officer_in_their_dept_assignment(mockdata, client, session):
+def test_ac_can_edit_officer_in_their_dept_assignment(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -489,7 +489,7 @@ def test_ac_can_edit_officer_in_their_dept_assignment(mockdata, client, session)
         assert officer.assignments[0].resign_date == date(2019, 11, 30)
 
 
-def test_ac_cannot_edit_assignment_outside_their_dept(mockdata, client, session):
+def test_ac_cannot_edit_assignment_outside_their_dept(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -539,7 +539,7 @@ def test_ac_cannot_edit_assignment_outside_their_dept(mockdata, client, session)
 TestPD = PoliceDepartment("Test Police Department", "TPD")
 
 
-def test_admin_can_add_police_department(mockdata, client, session):
+def test_admin_can_add_police_department(client, session):
     with current_app.test_request_context():
         _, user = login_admin(client)
 
@@ -566,7 +566,7 @@ def test_admin_can_add_police_department(mockdata, client, session):
         assert department.last_updated_by == user.id
 
 
-def test_admin_cannot_add_police_department_without_state(mockdata, client, session):
+def test_admin_cannot_add_police_department_without_state(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -579,7 +579,7 @@ def test_admin_cannot_add_police_department_without_state(mockdata, client, sess
         assert "Invalid value, must be one of: FA, AL, AK, AZ" in errors.get("state")[0]
 
 
-def test_ac_cannot_add_police_department(mockdata, client, session):
+def test_ac_cannot_add_police_department(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -596,7 +596,7 @@ def test_ac_cannot_add_police_department(mockdata, client, session):
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_admin_cannot_add_duplicate_police_department(mockdata, client, session):
+def test_admin_cannot_add_duplicate_police_department(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -632,7 +632,7 @@ def test_admin_cannot_add_duplicate_police_department(mockdata, client, session)
 CorrectedPD = PoliceDepartment("Corrected Police Department", "CPD")
 
 
-def test_admin_can_edit_police_department(mockdata, client, session):
+def test_admin_can_edit_police_department(client, session):
     with current_app.test_request_context():
         # Prevent CorrectedPD and MisspelledPD from having the same state
         MisspelledPD = PoliceDepartment(
@@ -747,7 +747,7 @@ def test_admin_can_edit_police_department(mockdata, client, session):
         )
 
 
-def test_admin_cannot_edit_police_department_without_state(mockdata, client, session):
+def test_admin_cannot_edit_police_department_without_state(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -780,7 +780,7 @@ def test_admin_cannot_edit_police_department_without_state(mockdata, client, ses
         assert "Invalid value, must be one of: FA, AL, AK, AZ" in errors.get("state")[0]
 
 
-def test_ac_cannot_edit_police_department(mockdata, client, session, department):
+def test_ac_cannot_edit_police_department(client, session, department):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -799,7 +799,7 @@ def test_ac_cannot_edit_police_department(mockdata, client, session, department)
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_admin_can_edit_rank_order(mockdata, client, session, department):
+def test_admin_can_edit_rank_order(client, session, department):
     with current_app.test_request_context():
         login_admin(client)
         ranks = department.jobs
@@ -833,7 +833,7 @@ def test_admin_can_edit_rank_order(mockdata, client, session, department):
         )
 
 
-def test_admin_cannot_delete_rank_in_use(mockdata, client, session, department):
+def test_admin_cannot_delete_rank_in_use(client, session, department):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -863,7 +863,7 @@ def test_admin_cannot_delete_rank_in_use(mockdata, client, session, department):
         assert len(updated_ranks) == len(original_ranks)
 
 
-def test_admin_can_delete_rank_not_in_use(mockdata, client, session, department):
+def test_admin_can_delete_rank_not_in_use(client, session, department):
     with current_app.test_request_context():
         login_admin(client)
         ranks_update = RANK_CHOICES_1.copy()
@@ -926,9 +926,7 @@ def test_admin_can_delete_rank_not_in_use(mockdata, client, session, department)
         )
 
 
-def test_admin_can_delete_multiple_ranks_not_in_use(
-    mockdata, client, session, department
-):
+def test_admin_can_delete_multiple_ranks_not_in_use(client, session, department):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -987,7 +985,7 @@ def test_admin_can_delete_multiple_ranks_not_in_use(
 
 
 def test_admin_cannot_commit_edit_that_deletes_one_rank_in_use_and_one_not_in_use_rank(
-    mockdata, client, session, department
+    client, session, department
 ):
     with current_app.test_request_context():
         login_admin(client)
@@ -1054,9 +1052,7 @@ def test_admin_cannot_commit_edit_that_deletes_one_rank_in_use_and_one_not_in_us
 ExistingPD = PoliceDepartment("Existing Police Department", "EPD")
 
 
-def test_admin_can_create_department_with_same_name_in_different_state(
-    mockdata, client, session
-):
+def test_admin_can_create_department_with_same_name_in_different_state(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1133,9 +1129,7 @@ def test_admin_can_create_department_with_same_name_in_different_state(
         ) in existing_duplicate_rv.data.decode(ENCODING_UTF_8)
 
 
-def test_admin_cannot_duplicate_police_department_during_edit(
-    mockdata, client, session
-):
+def test_admin_cannot_duplicate_police_department_during_edit(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1199,7 +1193,7 @@ def test_admin_cannot_duplicate_police_department_during_edit(
         assert new_department.short_name == NewPD.short_name
 
 
-def test_expected_dept_appears_in_submission_dept_selection(mockdata, client, session):
+def test_expected_dept_appears_in_submission_dept_selection(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1208,7 +1202,7 @@ def test_expected_dept_appears_in_submission_dept_selection(mockdata, client, se
         assert SPRINGFIELD_PD.name in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_admin_can_add_new_officer(mockdata, client, session, department, faker):
+def test_admin_can_add_new_officer(client, session, department, faker):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1243,9 +1237,7 @@ def test_admin_can_add_new_officer(mockdata, client, session, department, faker)
         assert officer.gender == "M"
 
 
-def test_admin_can_add_new_officer_with_unit(
-    mockdata, client, session, department, faker
-):
+def test_admin_can_add_new_officer_with_unit(client, session, department, faker):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1283,7 +1275,7 @@ def test_admin_can_add_new_officer_with_unit(
         assert Assignment.query.filter_by(base_officer=officer, unit=unit).one()
 
 
-def test_ac_can_add_new_officer_in_their_dept(mockdata, client, session):
+def test_ac_can_add_new_officer_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         department = session.get(Department, AC_DEPT)
@@ -1325,7 +1317,7 @@ def test_ac_can_add_new_officer_in_their_dept(mockdata, client, session):
             assert officer.gender == gender
 
 
-def test_ac_can_add_new_officer_with_unit_in_their_dept(mockdata, client, session):
+def test_ac_can_add_new_officer_with_unit_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         department = session.get(Department, AC_DEPT)
@@ -1370,7 +1362,7 @@ def test_ac_can_add_new_officer_with_unit_in_their_dept(mockdata, client, sessio
         assert Assignment.query.filter_by(base_officer=officer, unit=unit).one()
 
 
-def test_ac_cannot_add_new_officer_not_in_their_dept(mockdata, client, session):
+def test_ac_cannot_add_new_officer_not_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -1403,7 +1395,7 @@ def test_ac_cannot_add_new_officer_not_in_their_dept(mockdata, client, session):
         assert officer is None
 
 
-def test_admin_can_edit_existing_officer(mockdata, client, session, department, faker):
+def test_admin_can_edit_existing_officer(client, session, department, faker):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1449,7 +1441,7 @@ def test_admin_can_edit_existing_officer(mockdata, client, session, department, 
         assert link_url1 not in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_ac_cannot_edit_officer_not_in_their_dept(mockdata, client, session):
+def test_ac_cannot_edit_officer_not_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -1476,7 +1468,7 @@ def test_ac_cannot_edit_officer_not_in_their_dept(mockdata, client, session):
         assert officer.last_name == old_last_name
 
 
-def test_ac_can_see_officer_not_in_their_dept(mockdata, client, session):
+def test_ac_can_see_officer_not_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -1494,7 +1486,7 @@ def test_ac_can_see_officer_not_in_their_dept(mockdata, client, session):
         assert str(officer.id) in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_ac_can_edit_officer_in_their_dept(mockdata, client, session):
+def test_ac_can_edit_officer_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         department = session.get(Department, AC_DEPT)
@@ -1551,9 +1543,7 @@ def test_ac_can_edit_officer_in_their_dept(mockdata, client, session):
         assert officer.last_name == new_last_name
 
 
-def test_admin_adds_officer_without_middle_initial(
-    mockdata, client, session, department
-):
+def test_admin_adds_officer_without_middle_initial(client, session, department):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1582,9 +1572,7 @@ def test_admin_adds_officer_without_middle_initial(
         assert officer.gender == "M"
 
 
-def test_admin_adds_officer_with_letter_in_badge_no(
-    mockdata, client, session, department
-):
+def test_admin_adds_officer_with_letter_in_badge_no(client, session, department):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1614,7 +1602,7 @@ def test_admin_adds_officer_with_letter_in_badge_no(
         assert officer.assignments[0].star_no == "T666"
 
 
-def test_admin_can_add_new_unit(mockdata, client, session, department):
+def test_admin_can_add_new_unit(client, session, department):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1631,7 +1619,7 @@ def test_admin_can_add_new_unit(mockdata, client, session, department):
         assert unit.department_id == department.id
 
 
-def test_ac_can_add_new_unit_in_their_dept(mockdata, client, session):
+def test_ac_can_add_new_unit_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -1649,7 +1637,7 @@ def test_ac_can_add_new_unit_in_their_dept(mockdata, client, session):
         assert unit.department_id == department.id
 
 
-def test_ac_cannot_add_new_unit_not_in_their_dept(mockdata, client, session):
+def test_ac_cannot_add_new_unit_not_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -1665,9 +1653,7 @@ def test_ac_cannot_add_new_unit_not_in_their_dept(mockdata, client, session):
         assert unit is None
 
 
-def test_admin_can_add_new_officer_with_suffix(
-    mockdata, client, session, department, faker
-):
+def test_admin_can_add_new_officer_with_suffix(client, session, department, faker):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1713,9 +1699,7 @@ def test_invalid_officer_id_upload_photos(client, session):
         assert "This officer does not exist." in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_ac_cannot_directly_upload_photos_of_of_non_dept_officers(
-    mockdata, client, session
-):
+def test_ac_cannot_directly_upload_photos_of_of_non_dept_officers(client, session):
     with current_app.test_request_context():
         login_ac(client)
         department = Department.query.except_(
@@ -1731,7 +1715,7 @@ def test_ac_cannot_directly_upload_photos_of_of_non_dept_officers(
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_officer_csv(mockdata, client, session, department, faker):
+def test_officer_csv(client, session, department, faker):
     with current_app.test_request_context():
         login_admin(client)
         links = [
@@ -1780,7 +1764,7 @@ def test_officer_csv(mockdata, client, session, department, faker):
         assert form.star_no.data == added_lines[0]["badge number"]
 
 
-def test_assignments_csv(mockdata, client, session, department):
+def test_assignments_csv(client, session, department):
     with current_app.test_request_context():
         _, user = login_admin(client)
         officer = Officer.query.filter_by(department_id=department.id).first()
@@ -1820,7 +1804,7 @@ def test_assignments_csv(mockdata, client, session, department):
         assert new_assignment[0]["job title"] == job.job_title
 
 
-def test_incidents_csv(mockdata, client, session, department, faker):
+def test_incidents_csv(client, session, department, faker):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -1869,7 +1853,7 @@ def test_incidents_csv(mockdata, client, session, department, faker):
         assert form.description.data in csv[0]
 
 
-def test_browse_filtering_filters_bad(client, mockdata, session):
+def test_browse_filtering_filters_bad(client, session):
     with current_app.test_request_context():
         race_list = ["BLACK", "WHITE"]
         gender_list = ["M", "F"]
@@ -1922,7 +1906,7 @@ def test_browse_filtering_filters_bad(client, mockdata, session):
                     assert not any(bad_substr in token for token in filter_list)
 
 
-def test_browse_filtering_allows_good(client, mockdata, session, faker):
+def test_browse_filtering_allows_good(client, session, faker):
     with current_app.test_request_context():
         department_id = Department.query.first().id
 
@@ -2003,7 +1987,7 @@ def test_browse_filtering_allows_good(client, mockdata, session, faker):
         assert any("<dd>Male</dd>" in token for token in filter_list)
 
 
-def test_find_officer_redirect(client, mockdata, session):
+def test_find_officer_redirect(client, session):
     with current_app.test_request_context():
         department_id = Department.query.first().id
         rank = "Officer"
@@ -2052,9 +2036,7 @@ def test_find_officer_redirect(client, mockdata, session):
             assert f"{name}={value}" in rv.location
 
 
-def test_admin_can_upload_photos_of_dept_officers(
-    mockdata, client, session, test_jpg_bytes_io
-):
+def test_admin_can_upload_photos_of_dept_officers(client, session, test_jpg_bytes_io):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -2092,9 +2074,7 @@ def test_admin_can_upload_photos_of_dept_officers(
                 assert len(officer.face) == officer_face_count + 1
 
 
-def test_upload_photo_sends_500_on_s3_error(
-    mockdata, client, session, test_png_bytes_io
-):
+def test_upload_photo_sends_500_on_s3_error(client, session, test_png_bytes_io):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -2118,7 +2098,7 @@ def test_upload_photo_sends_500_on_s3_error(
             assert len(officer.face) == officer_face_count
 
 
-def test_upload_photo_sends_415_for_bad_file_type(mockdata, client, session):
+def test_upload_photo_sends_415_for_bad_file_type(client, session):
     with current_app.test_request_context():
         login_admin(client)
         data = {"file": (BytesIO(b"my file contents"), "test_cop1.png")}
@@ -2137,7 +2117,7 @@ def test_upload_photo_sends_415_for_bad_file_type(mockdata, client, session):
         assert b"not allowed" in rv.data
 
 
-def test_user_cannot_upload_officer_photo(mockdata, client, session):
+def test_user_cannot_upload_officer_photo(client, session):
     with current_app.test_request_context():
         login_user(client)
         data = {"file": (BytesIO(b"my file contents"), "test_cop1.png")}
@@ -2152,9 +2132,7 @@ def test_user_cannot_upload_officer_photo(mockdata, client, session):
         assert b"not authorized" in rv.data
 
 
-def test_ac_can_upload_photos_of_dept_officers(
-    mockdata, client, session, test_png_bytes_io
-):
+def test_ac_can_upload_photos_of_dept_officers(client, session, test_png_bytes_io):
     with current_app.test_request_context():
         login_ac(client)
         data = {
@@ -2202,7 +2180,7 @@ def test_invalid_officer_id_edit_officer(client, session):
         assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_edit_officers_with_blank_uids(mockdata, client, session):
+def test_edit_officers_with_blank_uids(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -2250,7 +2228,7 @@ def test_invalid_officer_id_add_salary(client, session):
         assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_admin_can_add_salary(mockdata, client, session):
+def test_admin_can_add_salary(client, session):
     with current_app.test_request_context():
         login_admin(client)
         officer = session.get(Officer, AC_DEPT)
@@ -2282,7 +2260,7 @@ def test_admin_can_add_salary(mockdata, client, session):
         assert has_database_cache_entry(*cache_params) is False
 
 
-def test_ac_can_add_salary_in_their_dept(mockdata, client, session):
+def test_ac_can_add_salary_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -2309,7 +2287,7 @@ def test_ac_can_add_salary_in_their_dept(mockdata, client, session):
         assert officer is not None
 
 
-def test_ac_cannot_add_non_dept_salary(mockdata, client, session):
+def test_ac_cannot_add_non_dept_salary(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -2339,7 +2317,7 @@ def test_invalid_officer_id_edit_salary(client, session):
         assert rv.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_admin_can_edit_salary(mockdata, client, session):
+def test_admin_can_edit_salary(client, session):
     with current_app.test_request_context():
         login_admin(client)
         officer = session.get(Officer, 1)
@@ -2389,7 +2367,7 @@ def test_admin_can_edit_salary(mockdata, client, session):
         assert has_database_cache_entry(*cache_params) is False
 
 
-def test_ac_can_edit_salary_in_their_dept(mockdata, client, session):
+def test_ac_can_edit_salary_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
 
@@ -2435,7 +2413,7 @@ def test_ac_can_edit_salary_in_their_dept(mockdata, client, session):
         assert officer.salaries[0].salary == Decimal(150000)
 
 
-def test_ac_cannot_edit_non_dept_salary(mockdata, client, session):
+def test_ac_cannot_edit_non_dept_salary(client, session):
     with current_app.test_request_context():
         officer = Officer.query.except_(
             Officer.query.filter_by(department_id=AC_DEPT)
@@ -2480,9 +2458,7 @@ def test_ac_cannot_edit_non_dept_salary(mockdata, client, session):
         assert officer.salaries[0].salary == Decimal("123456.78")
 
 
-def test_get_department_ranks_with_specific_department_id(
-    mockdata, client, session, department
-):
+def test_get_department_ranks_with_specific_department_id(client, session, department):
     with current_app.test_request_context():
         rv = client.get(
             url_for("main.get_dept_ranks", department_id=department.id),
@@ -2495,7 +2471,7 @@ def test_get_department_ranks_with_specific_department_id(
         assert data.count("Commander") == 1
 
 
-def test_get_department_ranks_with_no_department(mockdata, client, session):
+def test_get_department_ranks_with_no_department(client, session):
     with current_app.test_request_context():
         rv = client.get(url_for("main.get_dept_ranks"), follow_redirects=True)
         data = json.loads(rv.data.decode(ENCODING_UTF_8))
@@ -2505,7 +2481,7 @@ def test_get_department_ranks_with_no_department(mockdata, client, session):
         assert data.count("Commander") == 3  # Once for each test department
 
 
-def test_admin_can_add_link_to_officer_profile(mockdata, client, session):
+def test_admin_can_add_link_to_officer_profile(client, session):
     with current_app.test_request_context():
         login_admin(client)
         officer = Officer.query.first()
@@ -2535,7 +2511,7 @@ def test_admin_can_add_link_to_officer_profile(mockdata, client, session):
         assert has_database_cache_entry(*cache_params) is False
 
 
-def test_ac_can_add_link_to_officer_profile_in_their_dept(mockdata, client, session):
+def test_ac_can_add_link_to_officer_profile_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -2560,9 +2536,7 @@ def test_ac_can_add_link_to_officer_profile_in_their_dept(mockdata, client, sess
         assert officer.unique_internal_identifier in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_ac_cannot_add_link_to_officer_profile_not_in_their_dept(
-    mockdata, client, session
-):
+def test_ac_cannot_add_link_to_officer_profile_not_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.except_(
@@ -2596,7 +2570,7 @@ def test_ac_cannot_add_link_to_officer_profile_not_in_their_dept(
     ],
 )
 def test_ac_can_add_link_with_content_warning(
-    mockdata, client, session, link_type, expected_text
+    client, session, link_type, expected_text
 ):
     with current_app.test_request_context():
         login_ac(client)
@@ -2634,7 +2608,7 @@ def test_ac_can_add_link_with_content_warning(
         assert expected_text in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_admin_can_edit_link_on_officer_profile(mockdata, client, session):
+def test_admin_can_edit_link_on_officer_profile(client, session):
     with current_app.test_request_context():
         login_admin(client)
         officer = session.get(Officer, 1)
@@ -2666,7 +2640,7 @@ def test_admin_can_edit_link_on_officer_profile(mockdata, client, session):
         assert has_database_cache_entry(*cache_params) is False
 
 
-def test_ac_can_edit_link_on_officer_profile_in_their_dept(mockdata, client, session):
+def test_ac_can_edit_link_on_officer_profile_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         # Officer from department with id AC_DEPT and no links
@@ -2722,9 +2696,7 @@ def test_ac_can_edit_link_on_officer_profile_in_their_dept(mockdata, client, ses
         assert officer.unique_internal_identifier in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_ac_cannot_edit_link_on_officer_profile_not_in_their_dept(
-    mockdata, client, session
-):
+def test_ac_cannot_edit_link_on_officer_profile_not_in_their_dept(client, session):
     with current_app.test_request_context():
         login_admin(client)
         # Officer from another department (not id AC_DEPT) and no links
@@ -2780,7 +2752,7 @@ def test_ac_cannot_edit_link_on_officer_profile_not_in_their_dept(
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_admin_can_delete_link_from_officer_profile(mockdata, client, session):
+def test_admin_can_delete_link_from_officer_profile(client, session):
     with current_app.test_request_context():
         login_admin(client)
         # Officer from department with id AC_DEPT and some links
@@ -2807,9 +2779,7 @@ def test_admin_can_delete_link_from_officer_profile(mockdata, client, session):
         assert has_database_cache_entry(*cache_params) is False
 
 
-def test_ac_can_delete_link_from_officer_profile_in_their_dept(
-    mockdata, client, session
-):
+def test_ac_can_delete_link_from_officer_profile_in_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         # Officer from department with id AC_DEPT and no links
@@ -2854,9 +2824,7 @@ def test_ac_can_delete_link_from_officer_profile_in_their_dept(
         assert officer.unique_internal_identifier in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_ac_cannot_delete_link_from_officer_profile_not_in_their_dept(
-    mockdata, client, session
-):
+def test_ac_cannot_delete_link_from_officer_profile_not_in_their_dept(client, session):
     with current_app.test_request_context():
         login_admin(client)
         # Officer from another department (not id AC_DEPT) and no links
