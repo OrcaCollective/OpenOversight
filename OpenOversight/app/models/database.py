@@ -15,20 +15,35 @@ from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import CheckConstraint, UniqueConstraint, func
 from sqlalchemy.inspection import inspect
-from sqlalchemy.orm import DeclarativeMeta, declarative_mixin, declared_attr, validates
+from sqlalchemy.orm import (
+    DeclarativeMeta,
+    contains_eager,
+    declarative_mixin,
+    declared_attr,
+    joinedload,
+    validates,
+)
 from sqlalchemy.sql import func as sql_func
 from sqlalchemy.types import TypeDecorator
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from OpenOversight.app.models.database_cache import (
     DB_CACHE,
+    get_database_cache_entry,
     model_cache_key,
+    put_database_cache_entry,
     remove_database_cache_entries,
 )
 from OpenOversight.app.utils.choices import GENDER_CHOICES, RACE_CHOICES
 from OpenOversight.app.utils.constants import (
     ENCODING_UTF_8,
     KEY_DB_CREATOR,
+    KEY_DEPT_ALL_ASSIGNMENTS,
+    KEY_DEPT_ALL_INCIDENTS,
+    KEY_DEPT_ALL_LINKS,
+    KEY_DEPT_ALL_NOTES,
+    KEY_DEPT_ALL_OFFICERS,
+    KEY_DEPT_ALL_SALARIES,
     KEY_DEPT_ASSIGNMENTS_LAST_UPDATED,
     KEY_DEPT_INCIDENTS_LAST_UPDATED,
     KEY_DEPT_OFFICERS_LAST_UPDATED,
@@ -188,6 +203,7 @@ class TrackUpdates:
 
 class Department(BaseModel, TrackUpdates):
     __tablename__ = "departments"
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), index=False, unique=False, nullable=False)
     short_name = db.Column(db.String(100), unique=False, nullable=False)
@@ -201,7 +217,7 @@ class Department(BaseModel, TrackUpdates):
     __table_args__ = (UniqueConstraint("name", "state", name="departments_name_state"),)
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return self.name if not self.state else f"[{self.state}] {self.name}"
 
     @cached(cache=DB_CACHE, key=model_cache_key(KEY_DEPT_ASSIGNMENTS_LAST_UPDATED))
@@ -214,6 +230,104 @@ class Department(BaseModel, TrackUpdates):
             .scalar()
         )
         return assignment_updated.date() if assignment_updated else None
+
+    @staticmethod
+    def get_assignments(department_id: int) -> List:
+        cache_params = Department(id=department_id), KEY_DEPT_ALL_ASSIGNMENTS
+        assignments = get_database_cache_entry(*cache_params)
+
+        if assignments is None:
+            assignments = (
+                db.session.query(Assignment)
+                .join(Assignment.base_officer)
+                .filter(Officer.department_id == department_id)
+                .options(contains_eager(Assignment.base_officer))
+                .options(joinedload(Assignment.unit))
+                .options(joinedload(Assignment.job))
+                .all()
+            )
+            put_database_cache_entry(*cache_params, assignments)
+
+        return assignments
+
+    @staticmethod
+    def get_descriptions(department_id: int) -> List:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_NOTES)
+        descriptions = get_database_cache_entry(*cache_params)
+
+        if descriptions is None:
+            descriptions = (
+                db.session.query(Description)
+                .join(Description.officer)
+                .filter(Officer.department_id == department_id)
+                .options(contains_eager(Description.officer))
+                .all()
+            )
+            put_database_cache_entry(*cache_params, descriptions)
+
+        return descriptions
+
+    @staticmethod
+    def get_incidents(department_id: int) -> List:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_INCIDENTS)
+        incidents = get_database_cache_entry(*cache_params)
+
+        if incidents is None:
+            incidents = Incident.query.filter_by(department_id=department_id).all()
+            put_database_cache_entry(*cache_params, incidents)
+
+        return incidents
+
+    @staticmethod
+    def get_links(department_id: int) -> List:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_LINKS)
+        links = get_database_cache_entry(*cache_params)
+
+        if links is None:
+            links = (
+                db.session.query(Link)
+                .join(Link.officers)
+                .filter(Officer.department_id == department_id)
+                .options(contains_eager(Link.officers))
+                .all()
+            )
+            put_database_cache_entry(*cache_params, links)
+
+        return links
+
+    @staticmethod
+    def get_officers(department_id: int) -> List:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_OFFICERS)
+        officers = get_database_cache_entry(*cache_params)
+
+        if officers is None:
+            officers = (
+                db.session.query(Officer)
+                .options(joinedload(Officer.assignments).joinedload(Assignment.job))
+                .options(joinedload(Officer.salaries))
+                .filter_by(department_id=department_id)
+                .all()
+            )
+            put_database_cache_entry(*cache_params, officers)
+
+        return officers
+
+    @staticmethod
+    def get_salaries(department_id: int) -> List:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_SALARIES)
+        salaries = get_database_cache_entry(*cache_params)
+
+        if salaries is None:
+            salaries = (
+                db.session.query(Salary)
+                .join(Salary.officer)
+                .filter(Officer.department_id == department_id)
+                .options(contains_eager(Salary.officer))
+                .all()
+            )
+            put_database_cache_entry(*cache_params, salaries)
+
+        return salaries
 
     @cached(cache=DB_CACHE, key=model_cache_key(KEY_DEPT_INCIDENTS_LAST_UPDATED))
     def latest_incident_update(self) -> date:
@@ -274,10 +388,10 @@ class Note(BaseModel, TrackUpdates):
 class Description(BaseModel, TrackUpdates):
     __tablename__ = "descriptions"
 
-    officer = db.relationship("Officer", back_populates="descriptions")
     id = db.Column(db.Integer, primary_key=True)
     text_contents = db.Column(db.Text())
     officer_id = db.Column(db.Integer, db.ForeignKey("officers.id", ondelete="CASCADE"))
+    officer = db.relationship("Officer", back_populates="descriptions")
 
 
 class Officer(BaseModel, TrackUpdates):
@@ -742,7 +856,9 @@ class Incident(BaseModel, TrackUpdates):
         db.Integer, db.ForeignKey("locations.id", name="incidents_address_id_fkey")
     )
     address = db.relationship(
-        "Location", backref=db.backref("incidents", cascade_backrefs=False)
+        "Location",
+        backref=db.backref("incidents", cascade_backrefs=False),
+        lazy="joined",
     )
     license_plates = db.relationship(
         "LicensePlate",
@@ -776,6 +892,7 @@ class Incident(BaseModel, TrackUpdates):
 
 class User(UserMixin, BaseModel):
     __tablename__ = "users"
+
     id = db.Column(db.Integer, primary_key=True)
 
     # A universally unique identifier (UUID) that can be
