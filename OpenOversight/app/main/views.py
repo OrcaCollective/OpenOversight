@@ -1773,10 +1773,7 @@ def download_dept_descriptions_csv(department_id: int):
     field_names = [
         "id",
         "text_contents",
-        "created_by",
         "officer_id",
-        "created_at",
-        "last_updated_at",
     ]
 
     return make_downloadable_csv(
