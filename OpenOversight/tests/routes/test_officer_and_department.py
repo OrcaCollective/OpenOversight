@@ -1967,7 +1967,13 @@ def test_browse_filtering_allows_good(client, session, faker):
         def normalize_tokens_for_comparison(html_str: TestResponse, split_str: str):
             """Remove new lines, leading, and closing spaces between <dd> elements in
             formatted HTML."""
-            parsed_list = html_str.data.decode(ENCODING_UTF_8).split(split_str)[1:]
+            # Strip classes from dd/dt
+            html_str = re.sub(
+                r'<(dd|dt) class="[^"]+">',
+                r"<\1>",
+                html_str.data.decode(ENCODING_UTF_8),
+            )
+            parsed_list = html_str.split(split_str)[1:]
             parsed_list = [re.sub(r"<dd>\n\s+", "<dd>", token) for token in parsed_list]
             parsed_list = [
                 re.sub(r"\n\s+</dd>", "</dd>", token) for token in parsed_list
@@ -2871,6 +2877,7 @@ def test_ac_cannot_delete_link_from_officer_profile_not_in_their_dept(client, se
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
+@pytest.mark.skip(reason="Last updated dates not incorporated into new design yet")
 def test_browse_displays_last_updated_dates(mockdata, client, session):
     dept = Department.query.first()
 

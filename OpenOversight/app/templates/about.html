@@ -7,140 +7,82 @@
         content="OpenOversight is a Seattle Tech Bloc project that aims to improve law enforcement visibility and transparency using public and crowdsourced data. We maintain databases, digital galleries, and profiles of individual law enforcement officers from departments the so called Pacific Northwest that consolidate information including names, birthdates, mentions in news articles, salaries, and photographs." />
 {% endblock meta %}
 {% block content %}
-  <div role="main">
+  <div role="main" class="page-about">
     <div class="hero-section no-sub">
-      <div class="hero">About OpenOversight</div>
+      <h1 class="hero">About OpenOversight</h1>
     </div>
     <div class="vertical-padding horizontal-padding text-center">
-      <div class="col-lg-6 text-start mx-auto">
-        <p class="lead">
-          <small>
-            OpenOversight is a
-            <a href="https://twitter.com/TechBlocSEA"
-               target="_blank"
-               rel="noopener noreferrer">Seattle Tech Bloc</a>
-            project that aims to improve law enforcement
-            visibility and transparency using public and crowdsourced data. We maintain databases, digital galleries, and profiles of individual law enforcement officers from departments
-            the so called Pacific Northwest that consolidate information including names, birthdates, mentions in news articles, salaries, and photographs.
-          </small>
+      <div class="col-lg-6 text-start mx-auto my-2 pt-5">
+        <h2>OpenOversight is a public, searchable database of law enforcement officers.</h2>
+        <p>
+          OpenOversight is a Seattle Tech Bloc project that aims to improve law enforcement
+          visibility and transparency using public and crowdsourced data. We maintain databases,
+          digital galleries, and profiles of individual law enforcement officers from departments
+          the so-called Pacific Northwest that consolidate information including names,
+          birthdates, mentions in news articles, salaries, and photographs.
         </p>
-        <p class="lead">
-          <small>
-            This is an independent instance of OpenOversight hosted by Seattle
-            regional techbloc. For more info or reporting problems, reach out to
-            <a href="https://twitter.com/TechBlocSEA"
-               rel="noopener noreferrer"
-               target="_blank">TechBlocSEA on Twitter</a>
-            or
-            <a href="mailto:techblocsea@protonmail.com">techblocsea@protonmail.com</a>.
-          </small>
+        <p>
+          This is an independent instance of OpenOversight hosted by Seattle
+          regional techbloc. For more info or reporting problems, reach out to
+          <a href="mailto:techblocsea@protonmail.com">techblocsea@protonmail.com</a>.
         </p>
-        <div class="text-center">
-          <a href="{{ url_for('main.get_officer') }}"
-             class="btn btn-lg btn-info"
-             id="try-it">Try it</a>
-        </div>
+        <h2>We’re breaking new ground.</h2>
+        <p>
+          <a href="https://openoversight.com" target="_blank">OpenOversight</a> is the first project of its kind in the United States, and was first implemented in Chicago in October 2016.
+        </p>
+        <p>
+          There are several instances up in other areas throughout the United States, including in <a href="https://bpdwatch.com/" target="_blank">Baltimore</a> and <a href="https://openoversightva.org/" target="_blank">Virginia</a>.
+        </p>
+        <h2>We’re proudly open source.</h2>
+        <p>
+          OpenOversight is released as free and open source software so others can launch similar law enforcement accountability projects in their own cities. The software is available for download and collaborative development on <a href="https://github.com/lucyparsons/OpenOversight">GitHub</a>.
+        </p>
       </div>
     </div>
-    <div class="vertical-padding horizontal-padding">
-      <div class="row font-weight-300 text-center display-flex sink-row">
-        <div class="col-lg-4">
-          <div class="col-half-border">
-            <span class="fa-solid fa-institution fa-2x"></span>
-            <p>
-              This project is a response to the lack of transparency and justice in
-              policing. The public should have the right to know which officers are
-              patrolling their neighborhoods and watching their communities. When
-              officers abuse their positions of power, they should be able to be
-              easily identified and held accountable.
-            </p>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="col-half-border">
-            <span class="fa-solid fa-map-marker fa-2x"></span>
-            <p>
-              It is the first project of its kind in the United States, and was
-              first implemented in Chicago in October 2016. OpenOversight launched
-              in the East Bay of the San Francisco Bay Area in fall 2017 and in New
-              York City in 2018. A Baltimore instance was launched in 2019 at
-              <a href="https://bpdwatch.com" rel="noopener noreferrer" target="_blank">BPDWatch.com</a>. A Portland instance was launched around the same time at
-              <a href="https://cops.photo" rel="noopener noreferrer" target="_blank">cops.photo</a>.
-            </p>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="col-half-border">
-            <span class="fa-brands fa-github fa-2x"></span>
-            <p>
-              OpenOversight is released as free and open source software so others
-              can launch similar law enforcement accountability projects in their
-              own cities. The software is available for download and collaborative
-              development on
-              <a href="https://github.com/OrcaCollective/OpenOversight"
-                 rel="noopener noreferrer"
-                 target="_blank">GitHub</a>.
-            </p>
-          </div>
-        </div>
+    <div class="vertical-padding horizontal-padding text-center">
+      <div class="col-lg-6 text-start mx-auto my-2 bg-light-gray p-3">
+        <h2>
+          <em>A note to law enforcement:</em>
+        </h2>
+        <p>
+          Requests or questions regarding this project from those affiliated with law enforcement must be directed to our legal representation at <a href="mailto:legal@lucyparsonslabs.com">legal@lucyparsonslabs.com</a>.
+        </p>
+      </div>
+    </div>
+    <div class="vertical-padding horizontal-padding text-center">
+      <div class="col-lg-6 mx-auto text-start">
+        <h2>Press Release</h2>
+        <p>
+          <em>Media inquiries: <a href="mailto:media@lucyparsonslabs.com">media@lucyparsonslabs.com</a></em>
+        </p>
+        <p>
+          In support of demands for greater police accountability, Illinois nonprofit The Lucy Parsons Labs launched
+          OpenOversight, an interactive web tool and accountability platform that makes it easier for the public to identify
+          police officers, including for the purpose of complaints. We rely on crowdsourced and public data to build a
+          database
+          of police officers in a city, allowing the public to filter through the dataset to find the name and badge number
+          of
+          the offending officer.
+        </p>
+        <p>
+          Using OpenOversight, members of the public can search for the names and badge numbers of police with whom they
+          have negative interactions using the officer's estimated age, race and gender. Using this information, the
+          OpenOversight web application returns a digital gallery of potential matches and, when possible, includes pictures
+          of officers in uniform to assist in identification. "The deck is stacked against people harmed by police," says
+          Jennifer Helsby, CTO of the Lucy Parsons Labs and lead developer on the OpenOversight project. "Police are almost
+          never held accountable for misconduct or crimes they commit. To file a misconduct complaint, the burden is on the
+          public to provide as much detailed data about the officer as possible. OpenOversight aims to empower citizens with
+          tools that make it easier to identify officers and hold them accountable."
+        </p>
       </div>
     </div>
   </div>
-  <div>
-    <div class="row display-flex">
-      <div class="col-lg-6 bg-light-blue">
-        <div class="col-half-no-border">
-          <h2>Legal</h2>
-          <i>A note to law enforcement</i>
-          <p>
-            Requests or questions regarding this project from those affiliated with
-            law enforcement must be directed to Lucy Parsons Labs legal representation at
-            <a href="mailto:legal@lucyparsonslabs.com">legal@lucyparsonslabs.com</a>.
-          </p>
-        </div>
-      </div>
-      <div class="col-lg-6 bg-blue-gray">
-        <div class="col-half-no-border">
-          <h2>Contact and media</h2>
-          <p>
-            For media inquiries about OpenOversight, please email
-            <a href="mailto:media@lucyparsonslabs.com">media@lucyparsonslabs.com</a>. For other inquiries about the project, this particular instance,
-            including collaboration, please contact
-            <a href="mailto:techblocsea@protonmail.com">techblocsea@protonmail.com</a>.
-          </p>
-        </div>
-      </div>
-    </div>
-    <div>
-      <div class="hr-banner">
-        <div class="col-lg-8 mx-auto text-start">
-          <h2>Press Release</h2>
-          <p>
-            In support of demands for greater police accountability, Illinois
-            nonprofit The Lucy Parsons Labs launched OpenOversight, an interactive
-            web tool and accountability platform that makes it easier for the public
-            to identify police officers, including for the purpose of complains. We
-            rely on crowdsourced and public data to build a database of police
-            officers in a city, allowing the public to filter through the dataset to
-            find the name and badge number of the offending officer.
-          </p>
-          <p>
-            Using OpenOversight, members of the public can search for the names and
-            badge numbers of police with whom they have negative interactions using
-            the officer's estimated age, race and gender. Using this information,
-            the OpenOversight web application returns a digital gallery of potential
-            matches and, when possible, includes pictures of officers in uniform to
-            assist in identification. "The deck is stacked against people harmed by
-            police," says Jennifer Helsby, CTO of the Lucy Parsons Labs and lead
-            developer on the OpenOversight project. "Police are almost never held
-            accountable for misconduct or crimes they commit. To file a misconduct
-            complaint, the burden is on the public to provide as much detailed data
-            about the officer as possible. OpenOversight aims to empower citizens
-            with tools that make it easier to identify officers and hold them
-            accountable."
-          </p>
-        </div>
-      </div>
+  <div class="vertical-padding horizontal-padding text-center">
+    <div class="col-lg-6 text-start mx-auto mt-2 mb-5 bg-light-gray p-3">
+      <h2>Sponsors</h2>
+      <img src="{{ url_for('static', filename='images/shuttleworth-foundation-funded.png') }}"
+           alt="Shuttleworth Foundation logo"
+           class="p-4">
     </div>
   </div>
 {% endblock content %}

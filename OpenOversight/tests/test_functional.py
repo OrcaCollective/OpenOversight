@@ -361,7 +361,7 @@ def test_image_classification_and_tagging(mockdata, browser, server_port):
     wait_for_page_load(browser)
 
     dept_select = Select(browser.find_element("id", "department"))
-    dept_select.select_by_visible_text("[WA] Auburn Police Department")
+    dept_select.select_by_visible_text("Auburn Police Department")
     dept_id = dept_select.first_selected_option.get_attribute("value")
 
     browser.find_element(By.ID, "first_name").send_keys("Officer")
@@ -471,7 +471,7 @@ def test_anonymous_user_can_upload_image(mockdata, browser, server_port):
     select = browser.find_element(By.ID, "department")
     dept_select = Select(select)
     scroll_to_element(browser, select)
-    dept_select.select_by_visible_text("[WA] Auburn Police Department")
+    dept_select.select_by_visible_text("Auburn Police Department")
     dept_id = dept_select.first_selected_option.get_attribute("value")
 
     submit_image_to_dropzone(browser, img_path)
@@ -484,7 +484,9 @@ def test_anonymous_user_can_upload_image(mockdata, browser, server_port):
     wait_for_page_load(browser)
 
     page_text = browser.find_element(By.TAG_NAME, "body").text
-    assert "Do you see uniformed law enforcement officers in the photo?" in page_text
+    assert (
+        "Do you see uniformed law enforcement officers in the photo below?" in page_text
+    )
 
     browser.find_element(By.ID, "answer-yes").click()
     wait_for_page_load(browser)

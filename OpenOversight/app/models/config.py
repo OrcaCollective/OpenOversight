@@ -1,3 +1,4 @@
+import json
 import os
 
 from OpenOversight.app.utils.constants import (
@@ -78,6 +79,10 @@ class BaseConfig:
 
         # User settings
         self.APPROVE_REGISTRATIONS = os.environ.get(KEY_APPROVE_REGISTRATIONS, False)
+
+        # Map data
+        with open("OpenOversight/map.json") as f:
+            self.MAP_DATA = json.load(f)
 
 
 class DevelopmentConfig(BaseConfig):

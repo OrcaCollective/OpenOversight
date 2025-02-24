@@ -42,6 +42,32 @@ def test_department_repr(mockdata):
     )
 
 
+def test_department_by_state(mockdata, session, faker):
+    department = Department(
+        name="Peoria Police Department",
+        short_name="PPD",
+        state="IL",
+        unique_internal_identifier_label="UID",
+        created_by=1,
+        last_updated_by=1,
+    )
+    officer = Officer(
+        first_name=faker.first_name(),
+        last_name=faker.last_name(),
+        department=department,
+    )
+    session.add(department)
+    session.add(officer)
+    session.commit()
+
+    departments_by_state = Department.by_state()
+
+    # expected departments: SPD (IL), CPD (non-IL), PPD (IL)
+    assert len(departments_by_state.items()) == 2
+    assert len(departments_by_state["IL"]) == 2
+    assert {dept.short_name for dept in departments_by_state["IL"]} == {"SPD", "PPD"}
+
+
 def test_department_latest_assignment_update(mockdata):
     dept = Department.query.filter_by(
         name=SPRINGFIELD_PD.name, state=SPRINGFIELD_PD.state
