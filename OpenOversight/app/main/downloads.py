@@ -5,7 +5,6 @@ from http import HTTPStatus
 from typing import Any, Callable, Dict, List, TypeVar
 
 from flask import Response, abort
-from sqlalchemy.orm import Query
 
 from OpenOversight.app.models.database import (
     Assignment,
@@ -40,7 +39,7 @@ def check_output(output_str):
 
 
 def make_downloadable_csv(
-    query: Query,
+    query: List,
     department_id: int,
     csv_suffix: str,
     field_names: List[str],
@@ -161,8 +160,5 @@ def descriptions_record_maker(description: Description) -> _Record:
     return {
         "id": description.id,
         "text_contents": description.text_contents,
-        "created_by": description.created_by,
         "officer_id": description.officer_id,
-        "created_at": description.created_at,
-        "last_updated_at": description.last_updated_at,
     }

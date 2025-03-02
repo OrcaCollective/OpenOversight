@@ -5,7 +5,7 @@ from flask import current_app, url_for
 
 from OpenOversight.app.auth.forms import EditUserForm, LoginForm, RegistrationForm
 from OpenOversight.app.models.database import User
-from OpenOversight.app.utils.constants import ENCODING_UTF_8
+from OpenOversight.app.utils.constants import ENCODING_UTF_8, KEY_APPROVE_REGISTRATIONS
 from OpenOversight.tests.conftest import AC_DEPT
 from OpenOversight.tests.constants import (
     ADMIN_USER_EMAIL,
@@ -24,7 +24,7 @@ routes_methods = [
 
 # All login_required views should redirect if there is no user logged in
 @pytest.mark.parametrize("route,methods", routes_methods)
-def test_user_api_login_required(route, methods, client, mockdata):
+def test_user_api_login_required(route, methods, client):
     if HTTPMethod.GET in methods:
         rv = client.get(route)
         assert rv.status_code == HTTPStatus.FORBIDDEN
@@ -34,7 +34,7 @@ def test_user_api_login_required(route, methods, client, mockdata):
 
 
 @pytest.mark.parametrize("route,methods", routes_methods)
-def test_user_cannot_access_user_api(route, methods, mockdata, client, session):
+def test_user_cannot_access_user_api(route, methods, client, session):
     with current_app.test_request_context():
         login_user(client)
         if HTTPMethod.GET in methods:
@@ -46,7 +46,7 @@ def test_user_cannot_access_user_api(route, methods, mockdata, client, session):
 
 
 @pytest.mark.parametrize("route,methods", routes_methods)
-def test_ac_cannot_access_user_api(route, methods, mockdata, client, session):
+def test_ac_cannot_access_user_api(route, methods, client, session):
     with current_app.test_request_context():
         login_ac(client)
         if HTTPMethod.GET in methods:
@@ -57,7 +57,7 @@ def test_ac_cannot_access_user_api(route, methods, mockdata, client, session):
             assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_admin_can_update_users_to_ac(mockdata, client, session):
+def test_admin_can_update_users_to_ac(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -77,7 +77,7 @@ def test_admin_can_update_users_to_ac(mockdata, client, session):
         assert user.is_area_coordinator is True
 
 
-def test_admin_cannot_update_to_ac_without_department(mockdata, client, session):
+def test_admin_cannot_update_to_ac_without_department(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -95,7 +95,7 @@ def test_admin_cannot_update_to_ac_without_department(mockdata, client, session)
         assert user.is_area_coordinator is False
 
 
-def test_admin_can_update_users_to_admin(mockdata, client, session):
+def test_admin_can_update_users_to_admin(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -115,7 +115,7 @@ def test_admin_can_update_users_to_admin(mockdata, client, session):
         assert user.is_administrator is True
 
 
-def test_admin_can_delete_user(mockdata, client, session):
+def test_admin_can_delete_user(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -137,7 +137,7 @@ def test_admin_can_delete_user(mockdata, client, session):
         assert not session.get(User, user.id)
 
 
-def test_admin_cannot_delete_other_admin(mockdata, client, session):
+def test_admin_cannot_delete_other_admin(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -153,14 +153,17 @@ def test_admin_cannot_delete_other_admin(mockdata, client, session):
         assert session.get(User, user.id) is not None
 
 
-def test_admin_can_disable_user(mockdata, client, session):
+def test_admin_can_disable_user(client, session):
     with current_app.test_request_context():
-        login_admin(client)
+        _, current_user = login_admin(client)
 
         # just need to make sure to not select the admin user
-        user = User.query.filter_by(is_administrator=False).first()
+        user = User.query.filter_by(
+            is_administrator=False, disabled_at=None, disabled_by=None
+        ).first()
 
-        assert not user.is_disabled
+        assert user.disabled_at is None
+        assert user.disabled_by is None
 
         form = EditUserForm(
             is_disabled=True,
@@ -176,14 +179,16 @@ def test_admin_can_disable_user(mockdata, client, session):
         assert "updated!" in rv.data.decode(ENCODING_UTF_8)
 
         user = session.get(User, user.id)
-        assert user.is_disabled
+        assert user.disabled_at is not None
+        assert user.disabled_by == current_user.id
 
 
-def test_admin_cannot_disable_self(mockdata, client, session):
+def test_admin_cannot_disable_self(client, session):
     with current_app.test_request_context():
-        _, user = login_admin(client)
+        _, current_user = login_admin(client)
 
-        assert not user.is_disabled
+        assert current_user.disabled_at is None
+        assert current_user.disabled_by is None
 
         form = EditUserForm(
             is_disabled=True,
@@ -191,27 +196,28 @@ def test_admin_cannot_disable_self(mockdata, client, session):
         )
 
         rv = client.post(
-            url_for("auth.edit_user", user_id=user.id),
+            url_for("auth.edit_user", user_id=current_user.id),
             data=form.data,
             follow_redirects=True,
         )
 
         assert "You cannot edit your own account!" in rv.data.decode(ENCODING_UTF_8)
 
-        user = session.get(User, user.id)
-        assert not user.is_disabled
+        user = session.get(User, current_user.id)
+        assert user.disabled_at is None
+        assert user.disabled_by is None
 
 
-def test_admin_can_enable_user(mockdata, client, session):
+def test_admin_can_enable_user(client, session):
     with current_app.test_request_context():
-        login_admin(client)
+        _, current_user = login_admin(client)
 
         user = User.query.filter_by(email=GENERAL_USER_EMAIL).one()
-        user.is_disabled = True
-        session.commit()
+        user.disable_user(current_user.id)
 
         user = session.get(User, user.id)
-        assert user.is_disabled
+        assert user.disabled_at is not None
+        assert user.disabled_by == current_user.id
 
         form = EditUserForm(
             is_disabled=False,
@@ -227,10 +233,11 @@ def test_admin_can_enable_user(mockdata, client, session):
         assert "updated!" in rv.data.decode(ENCODING_UTF_8)
 
         user = session.get(User, user.id)
-        assert not user.is_disabled
+        assert user.disabled_at is not None
+        assert user.disabled_by == current_user.id
 
 
-def test_admin_can_resend_user_confirmation_email(mockdata, client, session):
+def test_admin_can_resend_user_confirmation_email(client, session):
     with current_app.test_request_context():
         login_admin(client)
 
@@ -252,8 +259,8 @@ def test_admin_can_resend_user_confirmation_email(mockdata, client, session):
         )
 
 
-def test_register_user_approval_required(mockdata, client, session):
-    current_app.config["APPROVE_REGISTRATIONS"] = True
+def test_register_user_approval_required(client, session):
+    current_app.config[KEY_APPROVE_REGISTRATIONS] = True
     with current_app.test_request_context():
         diceware_password = "operative hamster persevere verbalize curling"
         new_user_email = "jen@example.com"
@@ -285,16 +292,18 @@ def test_register_user_approval_required(mockdata, client, session):
         assert b"administrator has not approved your account yet" in rv.data
 
 
-def test_admin_can_approve_user(mockdata, client, session):
+def test_admin_can_approve_user(client, session):
     with current_app.test_request_context():
-        login_admin(client)
+        _, current_user = login_admin(client)
 
         user = User.query.filter_by(email=GENERAL_USER_EMAIL).first()
-        user.approved = False
+        user.approved_by = None
+        user.approved_at = None
         session.commit()
 
         user = session.get(User, user.id)
-        assert not user.approved
+        assert user.approved_by is None
+        assert user.approved_at is None
 
         form = EditUserForm(
             approved=True,
@@ -310,7 +319,8 @@ def test_admin_can_approve_user(mockdata, client, session):
         assert "updated!" in rv.data.decode(ENCODING_UTF_8)
 
         user = session.get(User, user.id)
-        assert user.approved
+        assert user.approved_at is not None
+        assert user.approved_by == current_user.id
 
 
 @pytest.mark.parametrize(
@@ -333,22 +343,42 @@ def test_admin_approval_sends_confirmation_email(
     currently_confirmed,
     should_send_email,
     approve_registration_config,
-    mockdata,
     client,
     session,
 ):
-    current_app.config["APPROVE_REGISTRATIONS"] = approve_registration_config
+    current_app.config[KEY_APPROVE_REGISTRATIONS] = approve_registration_config
     with current_app.test_request_context():
-        login_admin(client)
+        _, current_user = login_admin(client)
 
         user = User.query.filter_by(is_administrator=False).first()
-        user.approved = currently_approved
-        user.confirmed = currently_confirmed
-        session.commit()
+        if currently_approved:
+            user.approve_user(current_user.id)
+        else:
+            user.approved_at = None
+            user.approved_by = None
+            session.commit()
+
+        if currently_confirmed:
+            user.confirm_user(current_user.id)
+        else:
+            user.confirmed_at = None
+            user.confirmed_by = None
+            session.commit()
 
         user = session.get(User, user.id)
-        assert user.approved == currently_approved
-        assert user.confirmed == currently_confirmed
+        if currently_approved:
+            assert user.approved_at is not None
+            assert user.approved_by == current_user.id
+        else:
+            assert user.approved_at is None
+            assert user.approved_by is None
+
+        if currently_confirmed:
+            assert user.confirmed_at is not None
+            assert user.confirmed_by == current_user.id
+        else:
+            assert user.confirmed_at is None
+            assert user.confirmed_by is None
 
         form = EditUserForm(
             approved=True,
@@ -368,4 +398,5 @@ def test_admin_approval_sends_confirmation_email(
         assert "updated!" in rv.data.decode(ENCODING_UTF_8)
 
         user = session.get(User, user.id)
-        assert user.approved
+        assert user.approved_at is not None
+        assert user.approved_by == current_user.id

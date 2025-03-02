@@ -229,7 +229,10 @@ def test_user_cannot_submit_invalid_file_extension(mockdata):
 
 def test_unit_choices(mockdata):
     unit_choices_result = [str(x) for x in unit_choices()]
-    assert "Unit: Bureau of Organized Crime" in unit_choices_result
+    assert (
+        "<Unit (id: 4 : description: Bureau of Organized Crime : department_id: 2)>"
+        in unit_choices_result
+    )
 
 
 @upload_s3_patch
@@ -280,14 +283,12 @@ def test_save_image_to_s3_and_db_saves_filename_in_correct_format(
             assert len(filename_parts) == 2
 
 
-def test_save_image_to_s3_and_db_invalid_image(mockdata, client):
+def test_save_image_to_s3_and_db_invalid_image(client):
     with pytest.raises(ValueError):
         save_image_to_s3_and_db(BytesIO(b"invalid-image"), 1, 1)
 
 
-def test_save_image_to_s3_and_db_unrecognized_format(
-    mockdata, test_tiff_bytes_io, client
-):
+def test_save_image_to_s3_and_db_unrecognized_format(test_tiff_bytes_io, client):
     with pytest.raises(ValueError):
         save_image_to_s3_and_db(test_tiff_bytes_io, 1, 1)
 

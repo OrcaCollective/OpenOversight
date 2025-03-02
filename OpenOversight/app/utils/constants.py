@@ -1,6 +1,3 @@
-import os
-
-
 # Cache Key Constants
 KEY_DEPT_ALL_ASSIGNMENTS = "all_department_assignments"
 KEY_DEPT_ALL_INCIDENTS = "all_department_incidents"
@@ -14,6 +11,7 @@ KEY_DEPT_OFFICERS_LAST_UPDATED = "officers_last_updated"
 
 # Config Key Constants
 KEY_ALLOWED_EXTENSIONS = "ALLOWED_EXTENSIONS"
+KEY_APPROVE_REGISTRATIONS = "APPROVE_REGISTRATIONS"
 KEY_DATABASE_URI = "SQLALCHEMY_DATABASE_URI"
 KEY_ENV = "ENV"
 KEY_ENV_DEV = "development"
@@ -43,7 +41,6 @@ OO_TIME_FORMAT = "%I:%M %p"
 ENCODING_UTF_8 = "utf-8"
 FILE_TYPE_HTML = "html"
 FILE_TYPE_PLAIN = "plain"
-SAVED_UMASK = os.umask(0o077)  # Ensure the file is read/write by the creator only
 
 # File Name Constants
 SERVICE_ACCOUNT_FILE = "service_account_key.json"

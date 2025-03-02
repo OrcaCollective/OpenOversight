@@ -1,6 +1,8 @@
+import json
 import os
 
 from OpenOversight.app.utils.constants import (
+    KEY_APPROVE_REGISTRATIONS,
     KEY_MAIL_PASSWORD,
     KEY_MAIL_PORT,
     KEY_MAIL_SERVER,
@@ -76,7 +78,11 @@ class BaseConfig:
         self.MAX_CONTENT_LENGTH = 50 * MEGABYTE
 
         # User settings
-        self.APPROVE_REGISTRATIONS = os.environ.get("APPROVE_REGISTRATIONS", False)
+        self.APPROVE_REGISTRATIONS = os.environ.get(KEY_APPROVE_REGISTRATIONS, False)
+
+        # Map data
+        with open("OpenOversight/map.json") as f:
+            self.MAP_DATA = json.load(f)
 
 
 class DevelopmentConfig(BaseConfig):
@@ -96,6 +102,11 @@ class TestingConfig(BaseConfig):
         self.NUM_OFFICERS = 120
         self.RATELIMIT_ENABLED = False
         self.SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+        # Disable sqlite cached statements
+        # https://github.com/python/cpython/issues/118172
+        self.SQLALCHEMY_ENGINE_OPTIONS = {
+            "connect_args": {"cached_statements": 0},
+        }
 
 
 class ProductionConfig(BaseConfig):

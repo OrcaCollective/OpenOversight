@@ -3,6 +3,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+import us.states
 from flask import Flask, current_app, session
 
 from OpenOversight.app.utils.constants import (
@@ -87,6 +88,16 @@ def display_currency(value: float) -> str:
     return f"${value:,.2f}"
 
 
+def get_state_full_name(abbrev: str) -> str:
+    if abbrev == "FA":
+        return "Federal"
+
+    state = us.states.lookup(abbrev)
+    if state is None:
+        return "N/A"
+    return us.states.lookup(abbrev).name
+
+
 def instantiate_filters(app: Flask):
     """Instantiate all template filters"""
     app.template_filter("capfirst")(capfirst_filter)
@@ -99,3 +110,4 @@ def instantiate_filters(app: Flask):
     app.template_filter("local_time")(local_time)
     app.template_filter("thousands_separator")(thousands_separator)
     app.template_filter("display_currency")(display_currency)
+    app.template_filter("get_state_full_name")(get_state_full_name)

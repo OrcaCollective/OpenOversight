@@ -40,7 +40,7 @@ def test_route_admin_or_required(route, client, mockdata):
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_admins_can_create_descriptions(mockdata, client, session):
+def test_admins_can_create_descriptions(client, session):
     with current_app.test_request_context():
         _, admin = login_admin(client)
         officer = Officer.query.first()
@@ -65,7 +65,7 @@ def test_admins_can_create_descriptions(mockdata, client, session):
         assert created_description.last_updated_by == admin.id
 
 
-def test_acs_can_create_descriptions(mockdata, client, session):
+def test_acs_can_create_descriptions(client, session):
     with current_app.test_request_context():
         _, ac = login_ac(client)
         officer = Officer.query.first()
@@ -90,7 +90,7 @@ def test_acs_can_create_descriptions(mockdata, client, session):
         assert created_description.last_updated_by == ac.id
 
 
-def test_admins_can_edit_descriptions(mockdata, client, session):
+def test_admins_can_edit_descriptions(client, session):
     with current_app.test_request_context():
         _, admin = login_admin(client)
         officer = Officer.query.first()
@@ -131,7 +131,7 @@ def test_admins_can_edit_descriptions(mockdata, client, session):
         assert description.last_updated_by == admin.id
 
 
-def test_ac_can_edit_their_descriptions_in_their_department(mockdata, client, session):
+def test_ac_can_edit_their_descriptions_in_their_department(client, session):
     with current_app.test_request_context():
         _, user = login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -172,7 +172,7 @@ def test_ac_can_edit_their_descriptions_in_their_department(mockdata, client, se
         assert description.last_updated_by == user.id
 
 
-def test_ac_can_edit_others_descriptions(mockdata, client, session):
+def test_ac_can_edit_others_descriptions(client, session):
     with current_app.test_request_context():
         _, user = login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -212,7 +212,7 @@ def test_ac_can_edit_others_descriptions(mockdata, client, session):
         assert description.last_updated_by == user.id
 
 
-def test_ac_cannot_edit_descriptions_not_in_their_department(mockdata, client, session):
+def test_ac_cannot_edit_descriptions_not_in_their_department(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.except_(
@@ -247,7 +247,7 @@ def test_ac_cannot_edit_descriptions_not_in_their_department(mockdata, client, s
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_admins_can_delete_descriptions(mockdata, client, session):
+def test_admins_can_delete_descriptions(client, session):
     with current_app.test_request_context():
         login_admin(client)
         description = Description.query.first()
@@ -265,9 +265,7 @@ def test_admins_can_delete_descriptions(mockdata, client, session):
         assert deleted is None
 
 
-def test_acs_can_delete_their_descriptions_in_their_department(
-    mockdata, client, session
-):
+def test_acs_can_delete_their_descriptions_in_their_department(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -294,9 +292,7 @@ def test_acs_can_delete_their_descriptions_in_their_department(
         assert deleted is None
 
 
-def test_acs_cannot_delete_descriptions_not_in_their_department(
-    mockdata, client, session
-):
+def test_acs_cannot_delete_descriptions_not_in_their_department(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.except_(
@@ -326,7 +322,7 @@ def test_acs_cannot_delete_descriptions_not_in_their_department(
         assert not_deleted is not None
 
 
-def test_acs_can_get_edit_form_for_their_dept(mockdata, client, session):
+def test_acs_can_get_edit_form_for_their_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -348,7 +344,7 @@ def test_acs_can_get_edit_form_for_their_dept(mockdata, client, session):
         assert "Update" in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_acs_can_get_others_edit_form(mockdata, client, session):
+def test_acs_can_get_others_edit_form(client, session):
     with current_app.test_request_context():
         _, user = login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -372,7 +368,7 @@ def test_acs_can_get_others_edit_form(mockdata, client, session):
         assert "Update" in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_acs_cannot_get_edit_form_for_their_non_dept(mockdata, client, session):
+def test_acs_cannot_get_edit_form_for_their_non_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.except_(
@@ -395,7 +391,7 @@ def test_acs_cannot_get_edit_form_for_their_non_dept(mockdata, client, session):
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_users_can_see_descriptions(mockdata, client, session):
+def test_users_can_see_descriptions(client, session):
     with current_app.test_request_context():
         admin = User.query.filter_by(email=ADMIN_USER_EMAIL).first()
         officer = Officer.query.first()
@@ -417,7 +413,7 @@ def test_users_can_see_descriptions(mockdata, client, session):
         assert text_contents in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_admins_can_see_descriptions(mockdata, client, session):
+def test_admins_can_see_descriptions(client, session):
     with current_app.test_request_context():
         login_admin(client)
         officer = Officer.query.first()
@@ -437,7 +433,7 @@ def test_admins_can_see_descriptions(mockdata, client, session):
         assert text_contents in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_acs_can_see_descriptions_in_their_department(mockdata, client, session):
+def test_acs_can_see_descriptions_in_their_department(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -458,7 +454,7 @@ def test_acs_can_see_descriptions_in_their_department(mockdata, client, session)
         assert text_contents in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_acs_can_see_descriptions_not_in_their_department(mockdata, client, session):
+def test_acs_can_see_descriptions_not_in_their_department(client, session):
     with current_app.test_request_context():
         officer = Officer.query.except_(
             Officer.query.filter_by(department_id=AC_DEPT)
@@ -483,7 +479,7 @@ def test_acs_can_see_descriptions_not_in_their_department(mockdata, client, sess
         assert user.username in response_text
 
 
-def test_anonymous_users_cannot_see_description_creators(mockdata, client, session):
+def test_anonymous_users_cannot_see_description_creators(client, session):
     with current_app.test_request_context():
         officer = Officer.query.first()
         ac = User.query.filter_by(ac_department_id=AC_DEPT).first()

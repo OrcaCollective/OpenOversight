@@ -35,7 +35,7 @@ def test_route_admin_or_required(route, client, mockdata):
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_admins_can_create_notes(mockdata, client, session, faker):
+def test_admins_can_create_notes(client, session, faker):
     with current_app.test_request_context():
         login_admin(client)
         officer = Officer.query.first()
@@ -61,7 +61,7 @@ def test_admins_can_create_notes(mockdata, client, session, faker):
         assert has_database_cache_entry(*cache_params) is False
 
 
-def test_acs_can_create_notes(mockdata, client, session, faker):
+def test_acs_can_create_notes(client, session, faker):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.first()
@@ -82,7 +82,7 @@ def test_acs_can_create_notes(mockdata, client, session, faker):
         assert created_note.created_at is not None
 
 
-def test_admins_can_edit_notes(mockdata, client, session, faker):
+def test_admins_can_edit_notes(client, session, faker):
     with current_app.test_request_context():
         login_admin(client)
         officer = Officer.query.first()
@@ -118,7 +118,7 @@ def test_admins_can_edit_notes(mockdata, client, session, faker):
         assert has_database_cache_entry(*cache_params) is False
 
 
-def test_ac_can_edit_their_notes_in_their_department(mockdata, client, session, faker):
+def test_ac_can_edit_their_notes_in_their_department(client, session, faker):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -149,7 +149,7 @@ def test_ac_can_edit_their_notes_in_their_department(mockdata, client, session, 
         assert note.last_updated_at > original_date
 
 
-def test_ac_can_edit_others_notes(mockdata, client, session):
+def test_ac_can_edit_others_notes(client, session):
     with current_app.test_request_context():
         _, user = login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -183,7 +183,7 @@ def test_ac_can_edit_others_notes(mockdata, client, session):
         assert note.last_updated_at > original_date
 
 
-def test_ac_cannot_edit_notes_not_in_their_department(mockdata, client, session):
+def test_ac_cannot_edit_notes_not_in_their_department(client, session):
     with current_app.test_request_context():
         _, user = login_ac(client)
 
@@ -216,7 +216,7 @@ def test_ac_cannot_edit_notes_not_in_their_department(mockdata, client, session)
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_admins_can_delete_notes(mockdata, client, session):
+def test_admins_can_delete_notes(client, session):
     with current_app.test_request_context():
         login_admin(client)
         note = Note.query.first()
@@ -239,7 +239,7 @@ def test_admins_can_delete_notes(mockdata, client, session):
         assert has_database_cache_entry(*cache_params) is False
 
 
-def test_acs_can_delete_their_notes_in_their_department(mockdata, client, session):
+def test_acs_can_delete_their_notes_in_their_department(client, session):
     with current_app.test_request_context():
         _, user = login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -263,9 +263,7 @@ def test_acs_can_delete_their_notes_in_their_department(mockdata, client, sessio
         assert deleted is None
 
 
-def test_acs_cannot_delete_notes_not_in_their_department(
-    mockdata, client, session, faker
-):
+def test_acs_cannot_delete_notes_not_in_their_department(client, session, faker):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.except_(
@@ -292,7 +290,7 @@ def test_acs_cannot_delete_notes_not_in_their_department(
         assert not_deleted is not None
 
 
-def test_acs_can_get_edit_form_for_their_dept(mockdata, client, session):
+def test_acs_can_get_edit_form_for_their_dept(client, session):
     with current_app.test_request_context():
         _, user = login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -315,7 +313,7 @@ def test_acs_can_get_edit_form_for_their_dept(mockdata, client, session):
         assert "Update" in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_acs_can_get_others_edit_form(mockdata, client, session):
+def test_acs_can_get_others_edit_form(client, session):
     with current_app.test_request_context():
         _, user = login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -338,7 +336,7 @@ def test_acs_can_get_others_edit_form(mockdata, client, session):
         assert "Update" in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_acs_cannot_get_edit_form_for_their_non_dept(mockdata, client, session):
+def test_acs_cannot_get_edit_form_for_their_non_dept(client, session):
     with current_app.test_request_context():
         login_ac(client)
         officer = Officer.query.except_(
@@ -362,7 +360,7 @@ def test_acs_cannot_get_edit_form_for_their_non_dept(mockdata, client, session):
         assert rv.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_users_cannot_see_notes(mockdata, client, session, faker):
+def test_users_cannot_see_notes(client, session, faker):
     with current_app.test_request_context():
         officer = Officer.query.first()
         text_contents = faker.sentence(nb_words=20)
@@ -387,7 +385,7 @@ def test_users_cannot_see_notes(mockdata, client, session, faker):
         assert text_contents not in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_admins_can_see_notes(mockdata, client, session):
+def test_admins_can_see_notes(client, session):
     with current_app.test_request_context():
         _, user = login_admin(client)
         officer = Officer.query.first()
@@ -412,7 +410,7 @@ def test_admins_can_see_notes(mockdata, client, session):
         assert text_contents in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_acs_can_see_notes_in_their_department(mockdata, client, session):
+def test_acs_can_see_notes_in_their_department(client, session):
     with current_app.test_request_context():
         _, user = login_ac(client)
         officer = Officer.query.filter_by(department_id=AC_DEPT).first()
@@ -438,7 +436,7 @@ def test_acs_can_see_notes_in_their_department(mockdata, client, session):
         assert text_contents in rv.data.decode(ENCODING_UTF_8)
 
 
-def test_acs_cannot_see_notes_not_in_their_department(mockdata, client, session):
+def test_acs_cannot_see_notes_not_in_their_department(client, session):
     with current_app.test_request_context():
         officer = Officer.query.except_(
             Officer.query.filter_by(department_id=AC_DEPT)

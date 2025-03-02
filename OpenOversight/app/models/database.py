@@ -1,8 +1,11 @@
+import itertools
 import operator
 import re
 import time
 import uuid
 from datetime import date, datetime
+from datetime import time as dt_time
+from datetime import timezone
 from decimal import Decimal
 from typing import List, Optional
 
@@ -12,20 +15,36 @@ from flask import current_app
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import CheckConstraint, UniqueConstraint, func
-from sqlalchemy.orm import DeclarativeMeta, declarative_mixin, declared_attr, validates
+from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import (
+    DeclarativeMeta,
+    contains_eager,
+    declarative_mixin,
+    declared_attr,
+    joinedload,
+    validates,
+)
 from sqlalchemy.sql import func as sql_func
 from sqlalchemy.types import TypeDecorator
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from OpenOversight.app.models.database_cache import (
     DB_CACHE,
+    get_database_cache_entry,
     model_cache_key,
+    put_database_cache_entry,
     remove_database_cache_entries,
 )
 from OpenOversight.app.utils.choices import GENDER_CHOICES, RACE_CHOICES
 from OpenOversight.app.utils.constants import (
     ENCODING_UTF_8,
     KEY_DB_CREATOR,
+    KEY_DEPT_ALL_ASSIGNMENTS,
+    KEY_DEPT_ALL_INCIDENTS,
+    KEY_DEPT_ALL_LINKS,
+    KEY_DEPT_ALL_NOTES,
+    KEY_DEPT_ALL_OFFICERS,
+    KEY_DEPT_ALL_SALARIES,
     KEY_DEPT_ASSIGNMENTS_LAST_UPDATED,
     KEY_DEPT_INCIDENTS_LAST_UPDATED,
     KEY_DEPT_OFFICERS_LAST_UPDATED,
@@ -36,7 +55,67 @@ from OpenOversight.app.validators import state_validator, url_validator
 
 db = SQLAlchemy()
 jwt = JsonWebToken(SIGNATURE_ALGORITHM)
-BaseModel: DeclarativeMeta = db.Model
+Base: DeclarativeMeta = db.Model
+
+
+class BaseModel(Base):
+    __abstract__ = True
+
+    EXCLUDED = [
+        "approved_at",
+        "approved_by",
+        "confirmed_at",
+        "confirmed_by",
+        "created_at",
+        "created_by",
+        "disabled_at",
+        "disabled_by",
+        "password_hash",
+        "last_updated_at",
+        "last_updated_by",
+    ]
+
+    def __repr__(self) -> str:
+        """Convert model to a string that contains all values needed for recreation."""
+        ret_str = f"<{self.__class__.__name__} ("
+        for column in inspect(self).mapper.column_attrs:
+            if column.key in self.EXCLUDED or column.key.startswith("_"):
+                continue
+
+            if ret_str[-1] != "(":
+                ret_str += " : "
+
+            value = getattr(self, column.key)
+            if isinstance(value, (date, datetime)):
+                ret_str += f"{column.key}: {value.isoformat()}"
+            elif isinstance(value, date):
+                ret_str += f'{column.key}: {value.strftime("%Y-%m-%d")}'
+            elif isinstance(value, dt_time):
+                ret_str += f'{column.key}: {value.strftime("%I:%M %p")}'
+            else:
+                ret_str += f"{column.key}: {value}"
+
+        return ret_str + ")>"
+
+    def to_dict(self) -> dict:
+        """Convert a generic model instance into a dictionary."""
+        data = {}
+
+        for column in inspect(self).mapper.column_attrs:
+            if column.key in self.EXCLUDED or column.key.startswith("_"):
+                continue
+
+            value = getattr(self, column.key)
+            if isinstance(value, (date, datetime)):
+                data[column.key] = value.isoformat()
+            elif isinstance(value, date):
+                data[column.key] = value.strftime("%Y-%m-%d")
+            elif isinstance(value, dt_time):
+                data[column.key] = value.strftime("%I:%M %p")
+            else:
+                data[column.key] = value
+
+        return data
 
 
 officer_links = db.Table(
@@ -125,6 +204,7 @@ class TrackUpdates:
 
 class Department(BaseModel, TrackUpdates):
     __tablename__ = "departments"
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), index=False, unique=False, nullable=False)
     short_name = db.Column(db.String(100), unique=False, nullable=False)
@@ -137,22 +217,6 @@ class Department(BaseModel, TrackUpdates):
 
     __table_args__ = (UniqueConstraint("name", "state", name="departments_name_state"),)
 
-    def __repr__(self):
-        return f"<Department ID {self.id}: {self.name} {self.state}>"
-
-    def to_custom_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "short_name": self.short_name,
-            "state": self.state,
-            "unique_internal_identifier_label": self.unique_internal_identifier_label,
-        }
-
-    @property
-    def display_name(self):
-        return self.name if not self.state else f"[{self.state}] {self.name}"
-
     @cached(cache=DB_CACHE, key=model_cache_key(KEY_DEPT_ASSIGNMENTS_LAST_UPDATED))
     def latest_assignment_update(self) -> date:
         assignment_updated = (
@@ -163,6 +227,104 @@ class Department(BaseModel, TrackUpdates):
             .scalar()
         )
         return assignment_updated.date() if assignment_updated else None
+
+    @staticmethod
+    def get_assignments(department_id: int) -> list["Assignment"]:
+        cache_params = Department(id=department_id), KEY_DEPT_ALL_ASSIGNMENTS
+        assignments = get_database_cache_entry(*cache_params)
+
+        if assignments is None:
+            assignments = (
+                db.session.query(Assignment)
+                .join(Assignment.base_officer)
+                .filter(Officer.department_id == department_id)
+                .options(contains_eager(Assignment.base_officer))
+                .options(joinedload(Assignment.unit))
+                .options(joinedload(Assignment.job))
+                .all()
+            )
+            put_database_cache_entry(*cache_params, assignments)
+
+        return assignments
+
+    @staticmethod
+    def get_descriptions(department_id: int) -> list["Description"]:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_NOTES)
+        descriptions = get_database_cache_entry(*cache_params)
+
+        if descriptions is None:
+            descriptions = (
+                db.session.query(Description)
+                .join(Description.officer)
+                .filter(Officer.department_id == department_id)
+                .options(contains_eager(Description.officer))
+                .all()
+            )
+            put_database_cache_entry(*cache_params, descriptions)
+
+        return descriptions
+
+    @staticmethod
+    def get_incidents(department_id: int) -> list["Incident"]:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_INCIDENTS)
+        incidents = get_database_cache_entry(*cache_params)
+
+        if incidents is None:
+            incidents = Incident.query.filter_by(department_id=department_id).all()
+            put_database_cache_entry(*cache_params, incidents)
+
+        return incidents
+
+    @staticmethod
+    def get_links(department_id: int) -> list["Link"]:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_LINKS)
+        links = get_database_cache_entry(*cache_params)
+
+        if links is None:
+            links = (
+                db.session.query(Link)
+                .join(Link.officers)
+                .filter(Officer.department_id == department_id)
+                .options(contains_eager(Link.officers))
+                .all()
+            )
+            put_database_cache_entry(*cache_params, links)
+
+        return links
+
+    @staticmethod
+    def get_officers(department_id: int) -> list["Officer"]:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_OFFICERS)
+        officers = get_database_cache_entry(*cache_params)
+
+        if officers is None:
+            officers = (
+                db.session.query(Officer)
+                .options(joinedload(Officer.assignments).joinedload(Assignment.job))
+                .options(joinedload(Officer.salaries))
+                .filter_by(department_id=department_id)
+                .all()
+            )
+            put_database_cache_entry(*cache_params, officers)
+
+        return officers
+
+    @staticmethod
+    def get_salaries(department_id: int) -> list["Salary"]:
+        cache_params = (Department(id=department_id), KEY_DEPT_ALL_SALARIES)
+        salaries = get_database_cache_entry(*cache_params)
+
+        if salaries is None:
+            salaries = (
+                db.session.query(Salary)
+                .join(Salary.officer)
+                .filter(Officer.department_id == department_id)
+                .options(contains_eager(Salary.officer))
+                .all()
+            )
+            put_database_cache_entry(*cache_params, salaries)
+
+        return salaries
 
     @cached(cache=DB_CACHE, key=model_cache_key(KEY_DEPT_INCIDENTS_LAST_UPDATED))
     def latest_incident_update(self) -> date:
@@ -186,6 +348,17 @@ class Department(BaseModel, TrackUpdates):
         """Remove the Department model key from the cache if it exists."""
         remove_database_cache_entries(self, update_types)
 
+    @staticmethod
+    def by_state() -> dict[str, list["Department"]]:
+        departments = Department.query.filter(Department.officers.any()).order_by(
+            Department.state.asc(), Department.name.asc()
+        )
+        departments_by_state = {
+            state: list(group)
+            for state, group in itertools.groupby(departments, lambda d: d.state)
+        }
+        return departments_by_state
+
 
 class Job(BaseModel, TrackUpdates):
     __tablename__ = "jobs"
@@ -207,9 +380,6 @@ class Job(BaseModel, TrackUpdates):
         ),
     )
 
-    def __repr__(self):
-        return f"<Job ID {self.id}: {self.job_title}>"
-
     def __str__(self):
         return self.job_title
 
@@ -226,10 +396,10 @@ class Note(BaseModel, TrackUpdates):
 class Description(BaseModel, TrackUpdates):
     __tablename__ = "descriptions"
 
-    officer = db.relationship("Officer", back_populates="descriptions")
     id = db.Column(db.Integer, primary_key=True)
     text_contents = db.Column(db.Text())
     officer_id = db.Column(db.Integer, db.ForeignKey("officers.id", ondelete="CASCADE"))
+    officer = db.relationship("Officer", back_populates="descriptions")
 
 
 class Officer(BaseModel, TrackUpdates):
@@ -288,6 +458,14 @@ class Officer(BaseModel, TrackUpdates):
     __table_args__ = (
         CheckConstraint("gender in ('M', 'F', 'Other')", name="gender_options"),
     )
+
+    def __repr__(self):
+        if self.unique_internal_identifier:
+            return (
+                f"<Officer ID: {self.id} : {self.full_name()} "
+                f"({self.unique_internal_identifier})>"
+            )
+        return f"<Officer ID: {self.id} : {self.full_name()}>"
 
     def full_name(self):
         if self.middle_initial:
@@ -349,14 +527,6 @@ class Officer(BaseModel, TrackUpdates):
             return "Yes" if most_recent.resign_date is None else "No"
         return "Uncertain"
 
-    def __repr__(self):
-        if self.unique_internal_identifier:
-            return (
-                f"<Officer ID {self.id}: {self.full_name()} "
-                f"({self.unique_internal_identifier})>"
-            )
-        return f"<Officer ID {self.id}: {self.full_name()}>"
-
 
 class Currency(TypeDecorator):
     """
@@ -400,9 +570,6 @@ class Salary(BaseModel, TrackUpdates):
     year = db.Column(db.Integer, index=True, unique=False, nullable=False)
     is_fiscal_year = db.Column(db.Boolean, index=False, unique=False, nullable=False)
 
-    def __repr__(self):
-        return f"<Salary: ID {self.officer_id} : {self.salary}"
-
     @property
     def total_pay(self) -> float:
         return self.salary + self.overtime_pay
@@ -441,9 +608,6 @@ class Assignment(BaseModel, TrackUpdates):
     start_date = db.Column(db.Date, index=True, unique=False, nullable=True)
     resign_date = db.Column(db.Date, index=True, unique=False, nullable=True)
 
-    def __repr__(self):
-        return f"<Assignment: ID {self.officer_id} : {self.star_no}>"
-
     @property
     def start_date_or_min(self):
         return self.start_date or date.min
@@ -467,9 +631,6 @@ class Unit(BaseModel, TrackUpdates):
         backref=db.backref("unit_types", cascade_backrefs=False),
         order_by="Unit.description.asc()",
     )
-
-    def __repr__(self):
-        return f"Unit: {self.description}"
 
 
 class Face(BaseModel, TrackUpdates):
@@ -520,9 +681,6 @@ class Face(BaseModel, TrackUpdates):
 
     __table_args__ = (UniqueConstraint("officer_id", "img_id", name="unique_faces"),)
 
-    def __repr__(self):
-        return f"<Tag ID {self.id}: {self.officer_id} - {self.img_id}>"
-
 
 class Image(BaseModel, TrackUpdates):
     __tablename__ = "raw_images"
@@ -546,9 +704,6 @@ class Image(BaseModel, TrackUpdates):
     department = db.relationship(
         "Department", backref=db.backref("raw_images", cascade_backrefs=False)
     )
-
-    def __repr__(self):
-        return f"<Image ID {self.id}: {self.filepath}>"
 
 
 incident_links = db.Table(
@@ -709,7 +864,9 @@ class Incident(BaseModel, TrackUpdates):
         db.Integer, db.ForeignKey("locations.id", name="incidents_address_id_fkey")
     )
     address = db.relationship(
-        "Location", backref=db.backref("incidents", cascade_backrefs=False)
+        "Location",
+        backref=db.backref("incidents", cascade_backrefs=False),
+        lazy="joined",
     )
     license_plates = db.relationship(
         "LicensePlate",
@@ -743,6 +900,7 @@ class Incident(BaseModel, TrackUpdates):
 
 class User(UserMixin, BaseModel):
     __tablename__ = "users"
+
     id = db.Column(db.Integer, primary_key=True)
 
     # A universally unique identifier (UUID) that can be
@@ -758,8 +916,18 @@ class User(UserMixin, BaseModel):
     email = db.Column(db.String(64), unique=True, index=True)
     username = db.Column(db.String(64), unique=True, index=True)
     password_hash = db.Column(db.String(128))
-    confirmed = db.Column(db.Boolean, default=False)
-    approved = db.Column(db.Boolean, default=False)
+    confirmed_at = db.Column(db.DateTime(timezone=True))
+    confirmed_by = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL", name="users_confirmed_by_fkey"),
+        unique=False,
+    )
+    approved_at = db.Column(db.DateTime(timezone=True))
+    approved_by = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL", name="users_approved_by_fkey"),
+        unique=False,
+    )
     is_area_coordinator = db.Column(db.Boolean, default=False)
     ac_department_id = db.Column(
         db.Integer, db.ForeignKey("departments.id", name="users_ac_department_id_fkey")
@@ -770,7 +938,13 @@ class User(UserMixin, BaseModel):
         foreign_keys=[ac_department_id],
     )
     is_administrator = db.Column(db.Boolean, default=False)
-    is_disabled = db.Column(db.Boolean, default=False)
+    disabled_at = db.Column(db.DateTime(timezone=True))
+    disabled_by = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL", name="users_disabled_by_fkey"),
+        unique=False,
+    )
+
     dept_pref = db.Column(
         db.Integer, db.ForeignKey("departments.id", name="users_dept_pref_fkey")
     )
@@ -803,6 +977,21 @@ class User(UserMixin, BaseModel):
         nullable=False,
         server_default=sql_func.now(),
         unique=False,
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "(disabled_at IS NULL and disabled_by IS NULL) or (disabled_at IS NOT NULL and disabled_by IS NOT NULL)",
+            name="users_disabled_constraint",
+        ),
+        CheckConstraint(
+            "(confirmed_at IS NULL and confirmed_by IS NULL) or (confirmed_at IS NOT NULL and confirmed_by IS NOT NULL)",
+            name="users_confirmed_constraint",
+        ),
+        CheckConstraint(
+            "(approved_at IS NULL and approved_by IS NULL) or (approved_at IS NOT NULL and approved_by IS NOT NULL)",
+            name="users_approved_constraint",
+        ),
     )
 
     def is_admin_or_coordinator(self, department: Optional[Department]) -> bool:
@@ -861,7 +1050,7 @@ class User(UserMixin, BaseModel):
         payload = {"confirm": self.uuid}
         return self._jwt_encode(payload, expiration).decode(ENCODING_UTF_8)
 
-    def confirm(self, token):
+    def confirm(self, token, confirming_user_id: int):
         try:
             data = self._jwt_decode(token)
         except JoseError as e:
@@ -874,7 +1063,8 @@ class User(UserMixin, BaseModel):
                 self.uuid,
             )
             return False
-        self.confirmed = True
+        self.confirmed_at = datetime.now(timezone.utc)
+        self.confirmed_by = confirming_user_id
         db.session.add(self)
         db.session.commit()
         return True
@@ -927,7 +1117,37 @@ class User(UserMixin, BaseModel):
     @property
     def is_active(self):
         """Override UserMixin.is_active to prevent disabled users from logging in."""
-        return not self.is_disabled
+        return not self.disabled_at
 
-    def __repr__(self):
-        return f"<User {self.username!r}>"
+    def approve_user(self, approving_user_id: int):
+        """Handle approving logic."""
+        if self.approved_at or self.approved_by:
+            return False
+
+        self.approved_at = datetime.now(timezone.utc)
+        self.approved_by = approving_user_id
+        db.session.add(self)
+        db.session.commit()
+        return True
+
+    def confirm_user(self, confirming_user_id: int):
+        """Handle confirming logic."""
+        if self.confirmed_at or self.confirmed_by:
+            return False
+
+        self.confirmed_at = datetime.now(timezone.utc)
+        self.confirmed_by = confirming_user_id
+        db.session.add(self)
+        db.session.commit()
+        return True
+
+    def disable_user(self, disabling_user_id: int):
+        """Handle disabling logic."""
+        if self.disabled_at or self.disabled_by:
+            return False
+
+        self.disabled_at = datetime.now(timezone.utc)
+        self.disabled_by = disabling_user_id
+        db.session.add(self)
+        db.session.commit()
+        return True

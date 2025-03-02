@@ -12,28 +12,60 @@ from OpenOversight.app.models.database import (
     Assignment,
     Currency,
     Department,
-    Face,
     Image,
     Incident,
-    Job,
     LicensePlate,
     Link,
     Location,
     Officer,
-    Salary,
-    Unit,
     User,
 )
 from OpenOversight.app.utils.choices import STATE_CHOICES
-from OpenOversight.tests.conftest import SPRINGFIELD_PD
+from OpenOversight.tests.conftest import AC_DEPT, SPRINGFIELD_PD
+
+
+def test_no_omitted_fields_in_to_dict(mockdata):
+    department_dict = Department.query.filter_by(id=AC_DEPT).first().to_dict()
+
+    assert "created_by" not in department_dict.keys()
+    assert "last_updated_at" not in department_dict.keys()
 
 
 def test_department_repr(mockdata):
     department = Department.query.first()
     assert (
         repr(department)
-        == f"<Department ID {department.id}: {department.name} {department.state}>"
+        == f"<Department (id: {department.id} : name: {department.name} : "
+        f"short_name: {department.short_name} : state: {department.state} : "
+        f"unique_internal_identifier_label: "
+        f"{department.unique_internal_identifier_label})>"
     )
+
+
+def test_department_by_state(mockdata, session, faker):
+    department = Department(
+        name="Peoria Police Department",
+        short_name="PPD",
+        state="IL",
+        unique_internal_identifier_label="UID",
+        created_by=1,
+        last_updated_by=1,
+    )
+    officer = Officer(
+        first_name=faker.first_name(),
+        last_name=faker.last_name(),
+        department=department,
+    )
+    session.add(department)
+    session.add(officer)
+    session.commit()
+
+    departments_by_state = Department.by_state()
+
+    # expected departments: SPD (IL), CPD (non-IL), PPD (IL)
+    assert len(departments_by_state.items()) == 2
+    assert len(departments_by_state["IL"]) == 2
+    assert {dept.short_name for dept in departments_by_state["IL"]} == {"SPD", "PPD"}
 
 
 def test_department_latest_assignment_update(mockdata):
@@ -79,7 +111,7 @@ def test_officer_repr(session):
     ).first()
 
     assert (
-        repr(officer_uii) == f"<Officer ID {officer_uii.id}: "
+        repr(officer_uii) == f"<Officer ID: {officer_uii.id} : "
         f"{officer_uii.first_name} {officer_uii.middle_initial}. {officer_uii.last_name} "
         f"({officer_uii.unique_internal_identifier})>"
     )
@@ -93,7 +125,7 @@ def test_officer_repr(session):
     ).first()
 
     assert (
-        repr(officer_no_uii) == f"<Officer ID {officer_no_uii.id}: "
+        repr(officer_no_uii) == f"<Officer ID: {officer_no_uii.id} : "
         f"{officer_no_uii.first_name} {officer_no_uii.middle_initial}. "
         f"{officer_no_uii.last_name} {officer_no_uii.suffix}>"
     )
@@ -104,7 +136,7 @@ def test_officer_repr(session):
 
     assert (
         repr(officer_no_mi)
-        == f"<Officer ID {officer_no_mi.id}: {officer_no_mi.first_name} "
+        == f"<Officer ID: {officer_no_mi.id} : {officer_no_mi.first_name} "
         f"{officer_no_mi.last_name} {officer_no_mi.suffix} "
         f"({officer_no_mi.unique_internal_identifier})>"
     )
@@ -117,44 +149,6 @@ def test_officer_race_label(faker):
     )
 
     assert officer.race_label() == "Data Missing"
-
-
-def test_assignment_repr(mockdata):
-    assignment = Assignment.query.first()
-    assert (
-        repr(assignment)
-        == f"<Assignment: ID {assignment.base_officer.id} : {assignment.star_no}>"
-    )
-
-
-def test_job_repr(mockdata):
-    job = Job.query.first()
-    assert repr(job) == f"<Job ID {job.id}: {job.job_title}>"
-
-
-def test_image_repr(mockdata):
-    image = Image.query.first()
-    assert repr(image) == f"<Image ID {image.id}: {image.filepath}>"
-
-
-def test_face_repr(mockdata):
-    face = Face.query.first()
-    assert repr(face) == f"<Tag ID {face.id}: {face.officer_id} - {face.img_id}>"
-
-
-def test_unit_repr(mockdata):
-    unit = Unit.query.first()
-    assert repr(unit) == f"Unit: {unit.description}"
-
-
-def test_user_repr(mockdata):
-    user = User(username="bacon")
-    assert repr(user) == f"<User '{user.username}'>"
-
-
-def test_salary_repr(mockdata):
-    salary = Salary.query.first()
-    assert repr(salary) == f"<Salary: ID {salary.officer_id} : {salary.salary}"
 
 
 def test_password_not_printed(mockdata):
@@ -227,8 +221,11 @@ def test_valid_confirmation_token(mockdata, session):
     user = User(password="bacon")
     session.add(user)
     session.commit()
+
+    admin_user = User.query.filter_by(is_administrator=False).first()
     token = user.generate_confirmation_token()
-    assert user.confirm(token) is True
+
+    assert user.confirm(token, admin_user.id) is True
 
 
 def test_invalid_confirmation_token(mockdata, session):
@@ -237,17 +234,23 @@ def test_invalid_confirmation_token(mockdata, session):
     session.add(user1)
     session.add(user2)
     session.commit()
+
+    admin_user = User.query.filter_by(is_administrator=False).first()
     token = user1.generate_confirmation_token()
-    assert user2.confirm(token) is False
+
+    assert user2.confirm(token, admin_user.id) is False
 
 
 def test_expired_confirmation_token(mockdata, session):
     user = User(password="bacon")
     session.add(user)
     session.commit()
+
+    admin_user = User.query.filter_by(is_administrator=False).first()
     token = user.generate_confirmation_token(1)
     time.sleep(2)
-    assert user.confirm(token) is False
+
+    assert user.confirm(token, admin_user.id) is False
 
 
 def test_valid_reset_token(mockdata, session):

@@ -93,10 +93,13 @@ def make_admin_user(
         username=username,
         email=email,
         password=password,
-        confirmed=True,
         is_administrator=True,
     )
     db.session.add(u)
+    db.session.flush()
+
+    u.confirmed_at = datetime.now()
+    u.confirmed_by = u.id
     db.session.commit()
     print(f"Administrator {username} successfully added")
     current_app.logger.info(f"Administrator {username} added with email {email}")

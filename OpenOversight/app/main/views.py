@@ -1,4 +1,3 @@
-import os
 import re
 import sys
 from datetime import datetime
@@ -7,6 +6,7 @@ from traceback import format_exc
 from typing import Optional
 
 from flask import (
+    Blueprint,
     Response,
     abort,
     current_app,
@@ -22,12 +22,10 @@ from flask_login import current_user, login_required, login_user
 from flask_wtf import FlaskForm
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.exc import NoResultFound
 
-from OpenOversight.app import limiter, sitemap
 from OpenOversight.app.auth.forms import LoginForm
-from OpenOversight.app.main import main
 from OpenOversight.app.main.downloads import (
     assignment_record_maker,
     descriptions_record_maker,
@@ -74,10 +72,6 @@ from OpenOversight.app.models.database import (
     User,
     db,
 )
-from OpenOversight.app.models.database_cache import (
-    get_database_cache_entry,
-    put_database_cache_entry,
-)
 from OpenOversight.app.utils.auth import ac_or_admin_required, admin_required
 from OpenOversight.app.utils.choices import AGE_CHOICES, GENDER_CHOICES, RACE_CHOICES
 from OpenOversight.app.utils.cloud import crop_image, save_image_to_s3_and_db
@@ -85,9 +79,7 @@ from OpenOversight.app.utils.constants import (
     ENCODING_UTF_8,
     FLASH_MSG_PERMANENT_REDIRECT,
     KEY_DEPT_ALL_ASSIGNMENTS,
-    KEY_DEPT_ALL_INCIDENTS,
     KEY_DEPT_ALL_LINKS,
-    KEY_DEPT_ALL_NOTES,
     KEY_DEPT_ALL_OFFICERS,
     KEY_DEPT_ALL_SALARIES,
     KEY_DEPT_ASSIGNMENTS_LAST_UPDATED,
@@ -99,9 +91,10 @@ from OpenOversight.app.utils.db import (
     add_department_query,
     add_unit_query,
     compute_leaderboard_stats,
+    dept_choices,
     unit_choices,
-    unsorted_dept_choices,
 )
+from OpenOversight.app.utils.flask import limiter, sitemap
 from OpenOversight.app.utils.forms import (
     add_new_assignment,
     add_officer_profile,
@@ -125,9 +118,7 @@ from OpenOversight.app.utils.general import (
 )
 
 
-# Ensure the file is read/write by the creator only
-SAVED_UMASK = os.umask(0o077)
-
+main = Blueprint("main", __name__)
 sitemap_endpoints = []
 
 
@@ -154,7 +145,23 @@ def redirect_url(default="main.index"):
 @main.route("/")
 @main.route("/index")
 def index():
-    return render_template("index.html")
+    departments_by_state = Department.by_state()
+    department_count = sum(
+        [len(state_depts) for state_depts in departments_by_state.values()]
+    )
+
+    state_count = len(departments_by_state.keys())
+    # Exclude Federal (FA) from state count
+    if "FA" in departments_by_state.keys():
+        state_count -= 1
+
+    return render_template(
+        "index.html",
+        state_count=state_count,
+        department_count=department_count,
+        departments_by_state=departments_by_state,
+        map_paths=current_app.config["MAP_DATA"],
+    )
 
 
 @main.route("/timezone", methods=[HTTPMethod.POST])
@@ -171,20 +178,18 @@ def set_session_timezone():
 @sitemap_include
 @main.route("/browse", methods=[HTTPMethod.GET])
 def browse():
-    departments = Department.query.filter(Department.officers.any())
-    return render_template("browse.html", departments=departments)
+    departments_by_state = Department.by_state()
+    return render_template(
+        "browse.html",
+        departments_by_state=departments_by_state,
+        map_paths=current_app.config["MAP_DATA"],
+    )
 
 
 @sitemap_include
 @main.route("/find", methods=[HTTPMethod.GET, HTTPMethod.POST])
 def get_officer():
     form = FindOfficerForm()
-
-    # TODO: Figure out why this test is failing when the departments are sorted using
-    #  the dept_choices function.
-    departments_dict = [
-        dept_choice.to_custom_dict() for dept_choice in unsorted_dept_choices()
-    ]
 
     if getattr(current_user, "dept_pref_rel", None):
         set_dynamic_default(form.dept, current_user.dept_pref_rel)
@@ -216,7 +221,7 @@ def get_officer():
     return render_template(
         "input_find_officer.html",
         form=form,
-        depts_dict=departments_dict,
+        depts_dict=[dept_choice.to_dict() for dept_choice in dept_choices()],
         jsloads=["js/find_officer.js"],
     )
 
@@ -241,8 +246,10 @@ def get_started_labeling():
         flash("Invalid username or password.")
     else:
         current_app.logger.info(form.errors)
-    departments = Department.query.all()
-    return render_template("label_data.html", departments=departments, form=form)
+    departments_by_state = Department.by_state()
+    return render_template(
+        "label_data.html", departments_by_state=departments_by_state, form=form
+    )
 
 
 @main.route(
@@ -262,9 +269,14 @@ def redirect_sort_images(department_id: int):
 )
 @login_required
 def sort_images(department_id: int):
+    try:
+        department = Department.query.filter_by(id=department_id).one()
+    except NoResultFound:
+        abort(HTTPStatus.NOT_FOUND)
+
     # Select a random unsorted image from the database
     image_query = Image.query.filter_by(contains_cops=None).filter_by(
-        department_id=department_id
+        department_id=department.id
     )
     image = get_random_image(image_query)
 
@@ -273,7 +285,7 @@ def sort_images(department_id: int):
     else:
         proper_path = None
     return render_template(
-        "sort.html", image=image, path=proper_path, department_id=department_id
+        "sort.html", image=image, path=proper_path, department_id=department.id
     )
 
 
@@ -315,8 +327,6 @@ def officer_profile(officer_id: int):
         officer = Officer.query.filter_by(id=officer_id).one()
     except NoResultFound:
         abort(HTTPStatus.NOT_FOUND)
-    except Exception:
-        current_app.logger.exception("Error finding officer")
     form.job_title.query = (
         Job.query.filter_by(department_id=officer.department_id)
         .order_by(Job.order.asc())
@@ -380,15 +390,17 @@ def redirect_add_assignment(officer_id: int):
 @ac_or_admin_required
 def add_assignment(officer_id: int):
     form = AssignmentForm()
-    officer = db.session.get(Officer, officer_id)
+    try:
+        officer = Officer.query.filter_by(id=officer_id).one()
+    except NoResultFound:
+        flash("Officer not found")
+        abort(HTTPStatus.NOT_FOUND)
+
     form.job_title.query = (
         Job.query.filter_by(department_id=officer.department_id)
         .order_by(Job.order.asc())
         .all()
     )
-    if not officer:
-        flash("Officer not found")
-        abort(HTTPStatus.NOT_FOUND)
 
     if form.validate_on_submit():
         if current_user.is_administrator or (
@@ -442,7 +454,11 @@ def redirect_edit_assignment(officer_id: int, assignment_id: int):
 @login_required
 @ac_or_admin_required
 def edit_assignment(officer_id: int, assignment_id: int):
-    officer = db.session.get(Officer, officer_id)
+    try:
+        officer = Officer.query.filter_by(id=officer_id).one()
+    except NoResultFound:
+        flash("Officer not found")
+        abort(HTTPStatus.NOT_FOUND)
 
     if current_user.is_area_coordinator and not current_user.is_administrator:
         if not ac_can_edit_officer(officer, current_user):
@@ -492,8 +508,9 @@ def redirect_add_salary(officer_id: int):
 @ac_or_admin_required
 def add_salary(officer_id: int):
     form = SalaryForm()
-    officer = db.session.get(Officer, officer_id)
-    if not officer:
+    try:
+        officer = Officer.query.filter_by(id=officer_id).one()
+    except NoResultFound:
         flash("Officer not found")
         abort(HTTPStatus.NOT_FOUND)
 
@@ -557,7 +574,12 @@ def redirect_edit_salary(officer_id: int, salary_id: int):
 @login_required
 @ac_or_admin_required
 def edit_salary(officer_id: int, salary_id: int):
-    officer = db.session.get(Officer, officer_id)
+    try:
+        officer = Officer.query.filter_by(id=officer_id).one()
+    except NoResultFound:
+        flash("Officer not found")
+        abort(HTTPStatus.NOT_FOUND)
+
     if current_user.is_area_coordinator and not current_user.is_administrator:
         if not ac_can_edit_officer(officer, current_user):
             abort(HTTPStatus.FORBIDDEN)
@@ -592,10 +614,11 @@ def redirect_display_submission(image_id: int):
 @login_required
 def display_submission(image_id: int):
     try:
-        image = db.session.get(Image, image_id)
-        proper_path = serve_image(image.filepath)
+        image = Image.query.filter_by(id=image_id).one()
     except NoResultFound:
         abort(HTTPStatus.NOT_FOUND)
+
+    proper_path = serve_image(image.filepath)
     return render_template("image.html", image=image, path=proper_path)
 
 
@@ -611,10 +634,11 @@ def redirect_display_tag(tag_id: int):
 @main.route("/tags/<int:tag_id>")
 def display_tag(tag_id: int):
     try:
-        tag = db.session.get(Face, tag_id)
-        proper_path = serve_image(tag.original_image.filepath)
+        tag = Face.query.filter_by(id=tag_id).one()
     except NoResultFound:
         abort(HTTPStatus.NOT_FOUND)
+
+    proper_path = serve_image(tag.original_image.filepath)
     return render_template(
         "tag.html", face=tag, path=proper_path, jsloads=["js/tag.js"]
     )
@@ -744,7 +768,11 @@ def redirect_edit_department(department_id: int):
 @login_required
 @admin_required
 def edit_department(department_id: int):
-    department = db.get_or_404(Department, department_id)
+    try:
+        department = Department.query.filter_by(id=department_id).one()
+    except NoResultFound:
+        abort(HTTPStatus.NOT_FOUND)
+
     previous_name = department.name
     form = EditDepartmentForm(obj=department)
     original_ranks = department.jobs
@@ -848,8 +876,8 @@ def redirect_list_officer(
     race=None,
     gender=None,
     rank=None,
-    min_age: str = "16",
-    max_age: str = "100",
+    min_age=None,
+    max_age=None,
     last_name=None,
     first_name=None,
     badge=None,
@@ -888,8 +916,8 @@ def list_officer(
     race=None,
     gender=None,
     rank=None,
-    min_age="16",
-    max_age="100",
+    min_age=None,
+    max_age=None,
     last_name=None,
     first_name=None,
     badge=None,
@@ -898,6 +926,11 @@ def list_officer(
     current_job=None,
     require_photo: Optional[bool] = None,
 ):
+    try:
+        department = Department.query.filter_by(id=department_id).one()
+    except NoResultFound:
+        abort(HTTPStatus.NOT_FOUND)
+
     form = BrowseForm()
     form.rank.query = (
         Job.query.filter_by(department_id=department_id, is_sworn_officer=True)
@@ -917,10 +950,6 @@ def list_officer(
     form_data["current_job"] = current_job
     form_data["unique_internal_identifier"] = unique_internal_identifier
     form_data["require_photo"] = require_photo
-
-    department = db.session.get(Department, department_id)
-    if not department:
-        abort(HTTPStatus.NOT_FOUND)
 
     age_range = {ac[0] for ac in AGE_CHOICES}
 
@@ -1191,7 +1220,10 @@ def redirect_edit_officer(officer_id: int):
 @login_required
 @ac_or_admin_required
 def edit_officer(officer_id: int):
-    officer = db.session.get(Officer, officer_id)
+    try:
+        officer = Officer.query.filter_by(id=officer_id).one()
+    except NoResultFound:
+        abort(HTTPStatus.NOT_FOUND)
     form = EditOfficerForm(obj=officer)
 
     if request.method == HTTPMethod.GET:
@@ -1267,9 +1299,9 @@ def redirect_delete_tag(tag_id: int):
 @login_required
 @ac_or_admin_required
 def delete_tag(tag_id: int):
-    tag = db.session.get(Face, tag_id)
-
-    if not tag:
+    try:
+        tag = Face.query.filter_by(id=tag_id).one()
+    except NoResultFound:
         flash("Tag not found")
         abort(HTTPStatus.NOT_FOUND)
 
@@ -1302,9 +1334,9 @@ def redirect_set_featured_tag(tag_id: int):
 @main.route("/tags/set_featured/<int:tag_id>", methods=[HTTPMethod.POST])
 @login_required
 def set_featured_tag(tag_id: int):
-    tag = db.session.get(Face, tag_id)
-
-    if not tag:
+    try:
+        tag = Face.query.filter_by(id=tag_id).one()
+    except NoResultFound:
         flash("Tag not found")
         abort(HTTPStatus.NOT_FOUND)
 
@@ -1507,9 +1539,11 @@ def redirect_complete_tagging(image_id: int):
 @login_required
 def complete_tagging(image_id: int):
     # Select a random untagged image from the database
-    image = db.session.get(Image, image_id)
-    if not image:
+    try:
+        image = Image.query.filter_by(id=image_id).one()
+    except NoResultFound:
         abort(HTTPStatus.NOT_FOUND)
+
     image.is_tagged = True
     image.last_updated_by = current_user.id
     db.session.commit()
@@ -1581,18 +1615,7 @@ def redirect_download_dept_officers_csv(department_id: int):
 )
 @limiter.limit("5/minute")
 def download_dept_officers_csv(department_id: int):
-    cache_params = (Department(id=department_id), KEY_DEPT_ALL_OFFICERS)
-    officers = get_database_cache_entry(*cache_params)
-    if officers is None:
-        officers = (
-            db.session.query(Officer)
-            .options(joinedload(Officer.assignments).joinedload(Assignment.job))
-            .options(joinedload(Officer.salaries))
-            .filter_by(department_id=department_id)
-            .all()
-        )
-        put_database_cache_entry(*cache_params, officers)
-
+    officers = Department.get_officers(department_id)
     field_names = [
         "id",
         "unique identifier",
@@ -1608,6 +1631,7 @@ def download_dept_officers_csv(department_id: int):
         "job title",
         "most recent salary",
     ]
+
     return make_downloadable_csv(
         officers, department_id, "Officers", field_names, officer_record_maker
     )
@@ -1629,20 +1653,7 @@ def redirect_download_dept_assignments_csv(department_id: int):
 )
 @limiter.limit("5/minute")
 def download_dept_assignments_csv(department_id: int):
-    cache_params = Department(id=department_id), KEY_DEPT_ALL_ASSIGNMENTS
-    assignments = get_database_cache_entry(*cache_params)
-    if assignments is None:
-        assignments = (
-            db.session.query(Assignment)
-            .join(Assignment.base_officer)
-            .filter(Officer.department_id == department_id)
-            .options(contains_eager(Assignment.base_officer))
-            .options(joinedload(Assignment.unit))
-            .options(joinedload(Assignment.job))
-            .all()
-        )
-        put_database_cache_entry(*cache_params, assignments)
-
+    assignments = Department.get_assignments(department_id)
     field_names = [
         "id",
         "officer id",
@@ -1654,6 +1665,7 @@ def download_dept_assignments_csv(department_id: int):
         "unit id",
         "unit description",
     ]
+
     return make_downloadable_csv(
         assignments,
         department_id,
@@ -1679,12 +1691,7 @@ def redirect_download_incidents_csv(department_id: int):
 )
 @limiter.limit("5/minute")
 def download_incidents_csv(department_id: int):
-    cache_params = (Department(id=department_id), KEY_DEPT_ALL_INCIDENTS)
-    incidents = get_database_cache_entry(*cache_params)
-    if incidents is None:
-        incidents = Incident.query.filter_by(department_id=department_id).all()
-        put_database_cache_entry(*cache_params, incidents)
-
+    incidents = Department.get_incidents(department_id)
     field_names = [
         "id",
         "report_num",
@@ -1696,6 +1703,7 @@ def download_incidents_csv(department_id: int):
         "links",
         "officers",
     ]
+
     return make_downloadable_csv(
         incidents,
         department_id,
@@ -1721,18 +1729,7 @@ def redirect_download_dept_salaries_csv(department_id: int):
 )
 @limiter.limit("5/minute")
 def download_dept_salaries_csv(department_id: int):
-    cache_params = (Department(id=department_id), KEY_DEPT_ALL_SALARIES)
-    salaries = get_database_cache_entry(*cache_params)
-    if salaries is None:
-        salaries = (
-            db.session.query(Salary)
-            .join(Salary.officer)
-            .filter(Officer.department_id == department_id)
-            .options(contains_eager(Salary.officer))
-            .all()
-        )
-        put_database_cache_entry(*cache_params, salaries)
-
+    salaries = Department.get_salaries(department_id)
     field_names = [
         "id",
         "officer id",
@@ -1743,6 +1740,7 @@ def download_dept_salaries_csv(department_id: int):
         "year",
         "is_fiscal_year",
     ]
+
     return make_downloadable_csv(
         salaries, department_id, "Salaries", field_names, salary_record_maker
     )
@@ -1760,18 +1758,7 @@ def redirect_download_dept_links_csv(department_id: int):
 @main.route("/download/departments/<int:department_id>/links", methods=[HTTPMethod.GET])
 @limiter.limit("5/minute")
 def download_dept_links_csv(department_id: int):
-    cache_params = (Department(id=department_id), KEY_DEPT_ALL_LINKS)
-    links = get_database_cache_entry(*cache_params)
-    if links is None:
-        links = (
-            db.session.query(Link)
-            .join(Link.officers)
-            .filter(Officer.department_id == department_id)
-            .options(contains_eager(Link.officers))
-            .all()
-        )
-        put_database_cache_entry(*cache_params, links)
-
+    links = Department.get_links(department_id)
     field_names = [
         "id",
         "title",
@@ -1782,6 +1769,7 @@ def download_dept_links_csv(department_id: int):
         "officers",
         "incidents",
     ]
+
     return make_downloadable_csv(
         links, department_id, "Links", field_names, links_record_maker
     )
@@ -1803,36 +1791,26 @@ def redirect_download_dept_descriptions_csv(department_id: int):
 )
 @limiter.limit("5/minute")
 def download_dept_descriptions_csv(department_id: int):
-    cache_params = (Department(id=department_id), KEY_DEPT_ALL_NOTES)
-    notes = get_database_cache_entry(*cache_params)
-    if notes is None:
-        notes = (
-            db.session.query(Description)
-            .join(Description.officer)
-            .filter(Officer.department_id == department_id)
-            .options(contains_eager(Description.officer))
-            .all()
-        )
-        put_database_cache_entry(*cache_params, notes)
-
+    descriptions = Department.get_descriptions(department_id)
     field_names = [
         "id",
         "text_contents",
-        "created_by",
         "officer_id",
-        "created_at",
-        "last_updated_at",
     ]
+
     return make_downloadable_csv(
-        notes, department_id, "Notes", field_names, descriptions_record_maker
+        descriptions, department_id, "Notes", field_names, descriptions_record_maker
     )
 
 
 @sitemap_include
 @main.route("/download/all", methods=[HTTPMethod.GET])
 def all_data():
-    departments = Department.query.filter(Department.officers.any())
-    return render_template("departments_all.html", departments=departments)
+    departments_by_state = Department.by_state()
+    return render_template(
+        "departments_all.html",
+        departments_by_state=departments_by_state,
+    )
 
 
 @main.route(
@@ -1878,8 +1856,9 @@ def redirect_upload(department_id: int, officer_id: Optional[int] = None):
 @limiter.limit("250/minute")
 def upload(department_id: int, officer_id: Optional[int] = None):
     if officer_id:
-        officer = db.session.get(Officer, officer_id)
-        if not officer:
+        try:
+            officer = Officer.query.filter_by(id=officer_id).one()
+        except NoResultFound:
             return jsonify(error="This officer does not exist."), HTTPStatus.NOT_FOUND
         if current_user.is_anonymous or (
             not current_user.is_administrator
@@ -1935,6 +1914,12 @@ def upload(department_id: int, officer_id: Optional[int] = None):
 @main.route("/about")
 def about_oo():
     return render_template("about.html")
+
+
+@sitemap_include
+@main.route("/contact")
+def contact_oo():
+    return render_template("contact.html")
 
 
 @sitemap_include
