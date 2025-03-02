@@ -27,3 +27,8 @@ jobs:
           just build
           just up
           just test
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-traces
+          path: build/test_results/
