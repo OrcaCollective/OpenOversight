@@ -51,7 +51,7 @@ services:
       - ./poetry.lock:/usr/src/app/poetry.lock
       - ./pyproject.toml:/usr/src/app/pyproject.toml
       - ./OpenOversight:/usr/src/app/OpenOversight
-      - ./build/test_results:/test_results
+      - ./build/test-results:/test-results
     ports:
       - "3000:3000"
 

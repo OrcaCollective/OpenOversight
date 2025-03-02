@@ -28,7 +28,7 @@ RUN if [ "$IS_PROD" = "true" ]; then \
         poetry install --only main --no-root; \
     else \
         poetry install --no-root; \
-        playwright install --with-deps chromium; \
+        playwright install --with-deps firefox; \
     fi
 
 # Setup application

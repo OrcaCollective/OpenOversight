@@ -51,6 +51,14 @@ pytest-xdist = "3.2.1"
 sphinx = "7.3.7"
 sphinx-autobuild = "2024.2.4"
 
+[tool.pytest.ini_options]
+cache_dir = "/tmp"
+env = [
+    "ENV=testing",
+    "FLASK_APP=OpenOversight/app:app",
+]
+addopts = "--dist=loadgroup --browser firefox --tracing=on --output=/test-results"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
