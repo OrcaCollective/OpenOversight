@@ -295,10 +295,10 @@ def test_image_classification_and_tagging(mockdata, page, server_port):
 
     # 4. Classify the uploaded image
     page.goto(f"http://localhost:{server_port}/sort/departments/{dept_id}")
-    page.wait_for_load_state("load")
 
     # Check that image loaded correctly: https://stackoverflow.com/a/36296478
     image = page.locator("img.img-responsive")
+    image.wait_for_load_state()
     assert image.evaluate("image => image.complete") is True
     assert image.evaluate("image => image.naturalHeight") > 0
 
