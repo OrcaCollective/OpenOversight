@@ -10,7 +10,7 @@ WORKDIR /usr/src/app
 
 # Install packages depending on ENV arg from docker-compose
 ARG BASE_PACKAGES="gcc libpq-dev libjpeg62-turbo-dev libsqlite3-0 zlib1g-dev"
-ARG DEV_PACKAGES="firefox-esr"
+ARG DEV_PACKAGES=""
 RUN if [ "$IS_PROD" = "true" ]; then \
         PACKAGES_TO_INSTALL="$BASE_PACKAGES"; \
     else \
@@ -28,6 +28,7 @@ RUN if [ "$IS_PROD" = "true" ]; then \
         poetry install --only main --no-root; \
     else \
         poetry install --no-root; \
+        playwright install --with-deps chromium; \
     fi
 
 # Setup application
