@@ -25,6 +25,12 @@ To re-generate the poetry lock file (if you need to update dependencies in pypro
 1. Run `just lock`
 2. Include the modified `poetry.lock` file in your commit
 
+## Testing
+
+To run tests, run `just test` once your containers are up and running.
+
+We use Playwright for functional testing. If functional tests fail locally, you can find per-test traces in the `build/test-results` directory. In the Lint and Test GitHub action, traces are uploaded as an artifact you can download via the "Upload Artifact" step. Once you have your trace, you can upload it to the [Playwright Trace Viewer](https://trace.playwright.dev/) tool for debugging.
+
 
 ## Deployment
 
