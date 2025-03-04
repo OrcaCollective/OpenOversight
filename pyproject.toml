@@ -43,14 +43,21 @@ pandas = "^2.2.1"
 pre-commit = "4.0.1"
 pytest = "8.3.4"
 pytest-cov = "6.0.0"
-pytest-env = "1.0.1"
+pytest-env = "1.1.5"
 pytest-flake8 = "1.3.0"
+pytest-playwright = "0.7.0"
 pytest-sugar = "1.0.0"
 pytest-xdist = "3.2.1"
-selenium = "4.28.1"
 sphinx = "7.3.7"
 sphinx-autobuild = "2024.2.4"
-webdriver-manager = "4.0.2"
+
+[tool.pytest.ini_options]
+addopts = "--dist=loadgroup --tracing=retain-on-failure --output=/test-results"
+cache_dir = "/tmp"
+
+[tool.pytest_env]
+ENV="testing"
+FLASK_APP="OpenOversight/app:app"
 
 [build-system]
 requires = ["poetry-core"]

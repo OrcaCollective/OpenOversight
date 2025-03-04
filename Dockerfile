@@ -9,14 +9,8 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /usr/src/app
 
 # Install packages depending on ENV arg from docker-compose
-ARG BASE_PACKAGES="gcc libpq-dev libjpeg62-turbo-dev libsqlite3-0 zlib1g-dev"
-ARG DEV_PACKAGES="firefox-esr"
-RUN if [ "$IS_PROD" = "true" ]; then \
-        PACKAGES_TO_INSTALL="$BASE_PACKAGES"; \
-    else \
-        PACKAGES_TO_INSTALL="$BASE_PACKAGES $DEV_PACKAGES"; \
-    fi && \
-    apt-get update && \
+ARG PACKAGES_TO_INSTALL="gcc libpq-dev libjpeg62-turbo-dev libsqlite3-0 zlib1g-dev"
+RUN apt-get update && \
     apt-get install -y -qq --no-install-recommends $PACKAGES_TO_INSTALL && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -28,6 +22,7 @@ RUN if [ "$IS_PROD" = "true" ]; then \
         poetry install --only main --no-root; \
     else \
         poetry install --no-root; \
+        playwright install --with-deps chromium; \
     fi
 
 # Setup application

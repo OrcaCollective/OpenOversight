@@ -15,11 +15,8 @@ import pytest
 from faker import Faker
 from flask import current_app
 from PIL import Image as Pimage
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.firefox.webdriver import WebDriver as Firefox
+from playwright.sync_api import Page
 from sqlalchemy.orm import scoped_session, sessionmaker
-from webdriver_manager.firefox import GeckoDriverManager
 
 from OpenOversight.app import create_app
 from OpenOversight.app.models.database import (
@@ -900,19 +897,6 @@ def server(app, server_port):
     ).start()
 
 
-@pytest.fixture(scope="session")
-def browser(app, server):
-    options = FirefoxOptions()
-    options.add_argument("--headless")
-    options.add_argument("--width=1024")
-    options.add_argument("--height=768")
-
-    service = FirefoxService(
-        executable_path=GeckoDriverManager().install(), log_path="/tmp/geckodriver.log"
-    )
-    driver = Firefox(options=options, service=service)
-
-    yield driver
-
-    # shutdown headless webdriver
-    driver.quit()
+@pytest.fixture
+def page(app, server, page: Page):
+    yield page
