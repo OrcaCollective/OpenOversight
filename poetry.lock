@@ -1009,19 +1009,19 @@ tests = ["check-manifest (>=0.42)", "coverage (>=5.3,<6)", "pytest (>=6,<7)", "p
 
 [[package]]
 name = "flask-sqlalchemy"
-version = "3.0.3"
+version = "3.1.1"
 description = "Add SQLAlchemy support to your Flask application."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "Flask-SQLAlchemy-3.0.3.tar.gz", hash = "sha256:2764335f3c9d7ebdc9ed6044afaf98aae9fa50d7a074cef55dde307ec95903ec"},
-    {file = "Flask_SQLAlchemy-3.0.3-py3-none-any.whl", hash = "sha256:add5750b2f9cd10512995261ee2aa23fab85bd5626061aa3c564b33bb4aa780a"},
+    {file = "flask_sqlalchemy-3.1.1-py3-none-any.whl", hash = "sha256:4ba4be7f419dc72f4efd8802d69974803c37259dd42f3913b0dcf75c9447e0a0"},
+    {file = "flask_sqlalchemy-3.1.1.tar.gz", hash = "sha256:e4b68bb881802dda1a7d878b2fc84c06d1ee57fb40b874d3dc97dabfa36b8312"},
 ]
 
 [package.dependencies]
-Flask = ">=2.2"
-SQLAlchemy = ">=1.4.18"
+flask = ">=2.2.5"
+sqlalchemy = ">=2.0.16"
 
 [[package]]
 name = "flask-wtf"
@@ -3397,4 +3397,4 @@ wtforms = ">=3.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "bf205c977e17f48208ae75689199cb645b41b1a7c0576ce0b9d3917280b07eed"
+content-hash = "cf623ead2f3355fd0e1d14c16ac400ebac2bd06638e4fcbde6371d118373e97e"
