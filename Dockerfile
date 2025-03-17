@@ -9,14 +9,14 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /usr/src/app
 
 # Install packages depending on ENV arg from docker-compose
-ARG PACKAGES_TO_INSTALL="gcc libpq-dev libjpeg62-turbo-dev libsqlite3-0 zlib1g-dev"
+ARG PACKAGES_TO_INSTALL="gcc libpq-dev libjpeg62-turbo-dev libsqlite3-0 zlib1g-dev cargo"
 RUN apt-get update && \
     apt-get install -y -qq --no-install-recommends $PACKAGES_TO_INSTALL && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Add runtime dependencies to base image
-RUN pip3 install poetry~=1.8.0
+RUN pip3 install poetry~=2.1.1
 COPY pyproject.toml poetry.lock ./
 RUN if [ "$IS_PROD" = "true" ]; then \
         poetry install --only main --no-root; \
