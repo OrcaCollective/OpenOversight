@@ -30,7 +30,7 @@ psycopg2-binary = "2.9.9"
 python-dateutil = "2.9.0.post0"
 sqlalchemy = "2.0.32"
 us = "3.1.1"
-wtforms = "3.1.2"
+wtforms = "3.2.1"
 wtforms-sqlalchemy = "0.4.2"
 
 [tool.poetry.group.dev.dependencies]
