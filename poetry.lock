@@ -956,18 +956,19 @@ Werkzeug = ">=1.0.1"
 
 [[package]]
 name = "flask-mail"
-version = "0.9.1"
+version = "0.10.0"
 description = "Flask extension for sending email"
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "Flask-Mail-0.9.1.tar.gz", hash = "sha256:22e5eb9a940bf407bcf30410ecc3708f3c56cc44b29c34e1726fe85006935f41"},
+    {file = "flask_mail-0.10.0-py3-none-any.whl", hash = "sha256:a451e490931bb3441d9b11ebab6812a16bfa81855792ae1bf9c1e1e22c4e51e7"},
+    {file = "flask_mail-0.10.0.tar.gz", hash = "sha256:44083e7b02bbcce792209c06252f8569dd5a325a7aaa76afe7330422bd97881d"},
 ]
 
 [package.dependencies]
 blinker = "*"
-Flask = "*"
+flask = "*"
 
 [[package]]
 name = "flask-migrate"
@@ -3399,4 +3400,4 @@ wtforms = ">=3.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "0b05d166cebaf0089b2577bc96777e348cff7636188e207638db20cde2b9ddf2"
+content-hash = "586f43374135beb27e978bd6a1fae272617005360134d54ac1f87ff8cebac5f5"
