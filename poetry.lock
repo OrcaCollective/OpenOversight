@@ -3206,17 +3206,21 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "us"
-version = "3.1.1"
+version = "3.2.0"
 description = "US state meta information and other fun stuff"
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "us-3.1.1.tar.gz", hash = "sha256:e347963e8d24a1ca7437af443fa68591776847b50c8650d8ef0eb53482e705c2"},
+    {file = "us-3.2.0-py3-none-any.whl", hash = "sha256:571714ad6d473c72bbd2058a53404cdf4ecc0129e4f19adfcbeb4e2d7e3dc3e7"},
+    {file = "us-3.2.0.tar.gz", hash = "sha256:cb223e85393dcc5171ead0dd212badc47f9667b23700fea3e7ea5f310d545338"},
 ]
 
 [package.dependencies]
-jellyfish = "0.11.2"
+jellyfish = "*"
+
+[package.extras]
+dev = ["black", "flake8", "pytest", "pytz"]
 
 [[package]]
 name = "virtualenv"
@@ -3395,4 +3399,4 @@ wtforms = ">=3.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "ddaa04a1d2b62196e694239fcffc43fdc8e247f667bb4397a9b8a9d85b89f713"
+content-hash = "7a4f799f76ab61b3e71de817acbe4796714d8976051ee1b956dde4b73446b9b9"
