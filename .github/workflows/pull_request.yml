@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - uses: actions/setup-python@v5
         with:
           python-version: 3.11.5
@@ -21,7 +21,7 @@ jobs:
     needs: static-checks
     steps:
       - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - name: Run tests
         run: |
           just build
