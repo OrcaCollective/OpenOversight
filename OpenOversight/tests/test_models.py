@@ -3,6 +3,7 @@ import random
 import time
 from decimal import Decimal
 from unittest.mock import MagicMock
+from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy import and_
@@ -18,6 +19,7 @@ from OpenOversight.app.models.database import (
     Link,
     Location,
     Officer,
+    TZDateTime,
     User,
 )
 from OpenOversight.app.utils.choices import STATE_CHOICES
@@ -577,4 +579,61 @@ def test_currency_type_decorator(dialect_name, original_value, intermediate_valu
     assert intermediate_value == value
 
     value = currency.process_result_value(value, dialect)
+
+
+@pytest.mark.parametrize(
+    "by_attr, at_attr",
+    [
+        ("approved_by", "approved_at"),
+        ("confirmed_by", "confirmed_at"),
+        ("disabled_by", "disabled_at"),
+    ],
+)
+def test_user_constraints(mockdata, session, faker, by_attr, at_attr):
+    now = datetime.datetime.now(datetime.timezone.utc)
+    user = User(
+        email=faker.company_email(),
+        username=faker.word(),
+        password=faker.word(),
+    )
+    session.add(user)
+    session.commit()
+
+    setattr(user, at_attr, now)
+    setattr(user, by_attr, 1)
+    session.commit()
+
+    # Both or neither "_at" and "_by" must be set
+    setattr(user, at_attr, None)
+    setattr(user, by_attr, 1)
+    with pytest.raises(IntegrityError):
+        session.commit()
+
+
+@pytest.mark.parametrize(
+    "dialect_name,original_value,intermediate_value",
+    [
+        ("sqlite", None, None),
+        (
+            "sqlite",
+            datetime.datetime(1980, 1, 1, hour=0, tzinfo=ZoneInfo("America/Chicago")),
+            datetime.datetime(1980, 1, 1, hour=6),
+        ),
+        ("postgresql", None, None),
+        (
+            "postgresql",
+            datetime.datetime(1980, 1, 1, hour=0, tzinfo=ZoneInfo("America/Chicago")),
+            datetime.datetime(1980, 1, 1, hour=0, tzinfo=ZoneInfo("America/Chicago")),
+        ),
+    ],
+)
+def test_tzdatetime_type_decorator(dialect_name, original_value, intermediate_value):
+    tzdt = TZDateTime(timezone=True)
+    dialect = MagicMock()
+    dialect.name = dialect_name
+
+    value = tzdt.process_bind_param(original_value, dialect)
+    assert intermediate_value == value
+
+    value = tzdt.process_result_value(value, dialect)
     assert original_value == value

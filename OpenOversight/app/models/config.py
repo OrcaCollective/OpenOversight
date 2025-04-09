@@ -1,8 +1,15 @@
 import json
 import os
+from datetime import timedelta
 
 from OpenOversight.app.utils.constants import (
     KEY_APPROVE_REGISTRATIONS,
+    KEY_AUTH_EMAIL_COOLDOWN_HOURS,
+    KEY_DATABASE_URI,
+    KEY_ENV,
+    KEY_ENV_DEV,
+    KEY_ENV_PROD,
+    KEY_ENV_TESTING,
     KEY_MAIL_PASSWORD,
     KEY_MAIL_PORT,
     KEY_MAIL_SERVER,
@@ -37,7 +44,7 @@ class BaseConfig:
 
         # DB Settings
         self.SQLALCHEMY_TRACK_MODIFICATIONS = False
-        self.SQLALCHEMY_DATABASE_URI = os.environ.get("SQLALCHEMY_DATABASE_URI")
+        self.SQLALCHEMY_DATABASE_URI = os.environ.get(KEY_DATABASE_URI)
 
         # Protocol Settings
         self.SITEMAP_URL_SCHEME = "http"
@@ -79,6 +86,10 @@ class BaseConfig:
 
         # User settings
         self.APPROVE_REGISTRATIONS = os.environ.get(KEY_APPROVE_REGISTRATIONS, False)
+        # Time a user must wait between consecutive confirm account or reset password requests
+        self.AUTH_EMAIL_COOLDOWN_HOURS = timedelta(
+            hours=int(os.environ.get(KEY_AUTH_EMAIL_COOLDOWN_HOURS, 1))
+        )
 
         # Map data
         with open("OpenOversight/map.json") as f:
@@ -107,6 +118,8 @@ class TestingConfig(BaseConfig):
         self.SQLALCHEMY_ENGINE_OPTIONS = {
             "connect_args": {"cached_statements": 0},
         }
+        # Prevent user env settings from interfering with tests
+        self.AUTH_EMAIL_COOLDOWN_HOURS = timedelta(hours=1)
 
 
 class ProductionConfig(BaseConfig):
@@ -117,8 +130,8 @@ class ProductionConfig(BaseConfig):
 
 
 config: dict[str, BaseConfig] = {
-    "development": DevelopmentConfig(),
-    "testing": TestingConfig(),
-    "production": ProductionConfig(),
+    KEY_ENV_DEV: DevelopmentConfig(),
+    KEY_ENV_TESTING: TestingConfig(),
+    KEY_ENV_PROD: ProductionConfig(),
 }
-config["default"] = config.get(os.environ.get("ENV", ""), DevelopmentConfig())
+config["default"] = config.get(os.environ.get(KEY_ENV, ""), DevelopmentConfig())
