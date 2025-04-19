@@ -48,11 +48,9 @@ logs *args:
 pull:
     {{ DC }} pull
 
-# Pull and deploy all images
-deploy:
+# Pull, migrate, and deploy all images
+deploy: && pull (db "upgrade") up
     -git pull
-    @just pull
-    @just up
 
 # Tear down the database, remove the volumes, recreate the database, and populate it with sample data
 fresh-start: dotenv
