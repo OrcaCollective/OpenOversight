@@ -1,4 +1,4 @@
-FROM python:3.13.2-slim AS base
+FROM python:3.13.3-slim AS base
 ARG IS_PROD
 ENV DEBIAN_FRONTEND noninteractive
 ENV PIP_NO_CACHE_DIR=1
