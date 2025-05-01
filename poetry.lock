@@ -916,14 +916,14 @@ flask = "*"
 
 [[package]]
 name = "flask-limiter"
-version = "3.8.0"
+version = "3.12"
 description = "Rate limiting for flask applications"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "Flask_Limiter-3.8.0-py3-none-any.whl", hash = "sha256:0ab44f586d8cc349412791711b6cbafe8f86e7b60ad9e8f24f2686009f00900e"},
-    {file = "flask_limiter-3.8.0.tar.gz", hash = "sha256:686f8b4a75404e47b91565a795c70d29f69c145f6907f1f32522e962b134dada"},
+    {file = "flask_limiter-3.12-py3-none-any.whl", hash = "sha256:b94c9e9584df98209542686947cf647f1ede35ed7e4ab564934a2bb9ed46b143"},
+    {file = "flask_limiter-3.12.tar.gz", hash = "sha256:f9e3e3d0c4acd0d1ffbfa729e17198dd1042f4d23c130ae160044fc930e21300"},
 ]
 
 [package.dependencies]
@@ -931,12 +931,12 @@ Flask = ">=2"
 limits = ">=3.13"
 ordered-set = ">4,<5"
 rich = ">=12,<14"
-typing-extensions = ">=4"
 
 [package.extras]
 memcached = ["limits[memcached]"]
 mongodb = ["limits[mongodb]"]
 redis = ["limits[redis]"]
+valkey = ["limits[valkey]"]
 
 [[package]]
 name = "flask-login"
@@ -3400,4 +3400,4 @@ wtforms = ">=3.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "586f43374135beb27e978bd6a1fae272617005360134d54ac1f87ff8cebac5f5"
+content-hash = "f0063e4e2ddb6865778bdfa90156d48b2897cd9ca776fe325189b671c2bd2384"
