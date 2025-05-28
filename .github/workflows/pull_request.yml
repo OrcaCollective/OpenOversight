@@ -34,3 +34,10 @@ jobs:
         with:
           name: playwright-traces
           path: build/test-results/
+      - if: ${{ failure() }}
+        name: Print logs
+        run: |
+          echo "Minio logs:"
+          docker logs minio || true
+          echo "Postgres logs:"
+          docker logs postgres || true
