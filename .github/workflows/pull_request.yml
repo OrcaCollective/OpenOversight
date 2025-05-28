@@ -37,4 +37,4 @@ jobs:
       - if: ${{ failure() }}
         name: Print logs
         run: |
-          docker compose logs
+          FOLLOW_LOGS='' just logs
