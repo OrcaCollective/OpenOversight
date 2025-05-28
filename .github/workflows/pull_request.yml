@@ -38,6 +38,8 @@ jobs:
         name: Print logs
         run: |
           echo "Minio logs:"
-          docker logs minio || true
+          docker compose logs minio || true
+          echo "Createbucket logs:"
+          docker compose logs createbucket || true
           echo "Postgres logs:"
-          docker logs postgres || true
+          docker compose logs postgres || true
