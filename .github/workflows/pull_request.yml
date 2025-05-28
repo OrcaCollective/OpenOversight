@@ -37,9 +37,4 @@ jobs:
       - if: ${{ failure() }}
         name: Print logs
         run: |
-          echo "Minio logs:"
-          docker compose logs minio || true
-          echo "Createbucket logs:"
-          docker compose logs createbucket || true
-          echo "Postgres logs:"
-          docker compose logs postgres || true
+          docker compost logs
