@@ -6,6 +6,7 @@ COMPOSE_FILE := "--file=docker-compose.yml" + (
 DC := "docker compose " + COMPOSE_FILE
 RUN := DC + " run --rm"
 RUN_WEB := RUN + " web"
+FOLLOW_LOGS := env("FOLLOW_LOGS", "-f")
 set dotenv-load := false
 # Force just to hand down positional arguments so quoted arguments with spaces are
 # handled appropriately
@@ -42,7 +43,7 @@ down *args:
 
 # Attach logs to all (or the specified) services
 logs *args:
-	{{ DC }} logs -f {{ args }}
+	{{ DC }} logs {{ FOLLOW_LOGS }} {{ args }}
 
 # Pull all docker images
 pull:

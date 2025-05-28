@@ -25,10 +25,16 @@ jobs:
       - name: Run tests
         run: |
           just build
+          just down -v
           just up
+          sleep 3
           just test
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-traces
           path: build/test-results/
+      - if: ${{ failure() }}
+        name: Print logs
+        run: |
+          FOLLOW_LOGS='' just logs
