@@ -37,4 +37,4 @@ jobs:
       - if: ${{ failure() }}
         name: Print logs
         run: |
-          docker compost logs
+          docker compose logs
