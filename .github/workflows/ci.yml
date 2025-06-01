@@ -1,9 +1,12 @@
 name: Lint and Test
 
-on: pull_request
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
-
   static-checks:
     runs-on: ubuntu-latest
     steps:
@@ -32,7 +35,7 @@ jobs:
         with:
           name: playwright-traces
           path: build/test-results/
-      - if: ${{ failure() }}
+      - if: ${{ failure() && github.event_name == 'pull_request' }}
         name: Print logs
         run: |
           FOLLOW_LOGS='' just logs
