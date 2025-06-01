@@ -25,9 +25,7 @@ jobs:
       - name: Run tests
         run: |
           just build
-          just down -v
           just up
-          sleep 3
           just test
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
