@@ -25,11 +25,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: extractions/setup-just@v3
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Cache Docker layers
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          # Use a hash of any files that affect the Docker build context
+          key: ${{ runner.os }}-buildx-${{ hashFiles('Dockerfile', 'docker-compose*.yml', 'poetry.lock', 'pyproject.toml') }}
+          # Fallback to a more generic key if the specific one is not found
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
       - name: Run tests
         run: |
           just build
           just up
           just test
+
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
