@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Welcome to OpenOversight’s documentation! &#8212; OpenOversight  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=20a8fdea" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Area Coordinator" href="area_coordinator.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="#">
+    <img class="logo" src="_static/lpl-logo.png" alt="Logo" />
+    
+    <h1 class="logo logo-name">OpenOversight</h1>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="area_coordinator.html">Area Coordinator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bulk_upload.html">Using the bulk upload feature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced_csv_import.html">Advanced csv import</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="area_coordinator.html" title="next chapter">Area Coordinator</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="welcome-to-openoversight-s-documentation">
+<h1>Welcome to OpenOversight’s documentation!<a class="headerlink" href="#welcome-to-openoversight-s-documentation" title="Link to this heading">¶</a></h1>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="area_coordinator.html">Area Coordinator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bulk_upload.html">Using the bulk upload feature</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bulk_upload.html#preparation-steps">Preparation steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bulk_upload.html#layout-of-the-csv-file">Layout of the csv file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bulk_upload.html#explanation-of-the-individual-fields">Explanation of the individual fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bulk_upload.html#the-command-to-run-on-the-server">The command to run on the server</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="advanced_csv_import.html">Advanced csv import</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#before-you-start">Before you start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#explanation-of-the-command">Explanation of the command</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#general-overview-of-the-csv-import">General overview of the csv import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#the-id-field">The <code class="docutils literal notranslate"><span class="pre">id</span></code> field</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#officers-csv">Officers csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#assignments-csv">Assignments csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#salaries-csv">Salaries csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#incidents-csv">Incidents csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#links-csv">Links csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_csv_import.html#local-development-flag-force-create">Local development flag <code class="docutils literal notranslate"><span class="pre">--force-create</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>OpenOversight is a Lucy Parsons Labs project to improve law enforcement
+accountability through public and crowdsourced data. We maintain a database
+of officer demographic information and provide digital galleries of photographs.
+This is done to help people identify law enforcement officers for filing
+complaints and in order for the public to see work-related information about
+law enforcement officers that interact with the public.</p>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2018, Lucy Parsons Labs.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

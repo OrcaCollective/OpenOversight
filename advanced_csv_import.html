@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Advanced csv import &#8212; OpenOversight  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=20a8fdea" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Using the bulk upload feature" href="bulk_upload.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="index.html">
+    <img class="logo" src="_static/lpl-logo.png" alt="Logo" />
+    
+    <h1 class="logo logo-name">OpenOversight</h1>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="area_coordinator.html">Area Coordinator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bulk_upload.html">Using the bulk upload feature</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Advanced csv import</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#before-you-start">Before you start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#explanation-of-the-command">Explanation of the command</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#general-overview-of-the-csv-import">General overview of the csv import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-id-field">The <code class="docutils literal notranslate"><span class="pre">id</span></code> field</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#officers-csv">Officers csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#assignments-csv">Assignments csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#salaries-csv">Salaries csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#incidents-csv">Incidents csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#links-csv">Links csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#local-development-flag-force-create">Local development flag <code class="docutils literal notranslate"><span class="pre">--force-create</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="bulk_upload.html" title="previous chapter">Using the bulk upload feature</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="advanced-csv-import">
+<h1>Advanced csv import<a class="headerlink" href="#advanced-csv-import" title="Link to this heading">¶</a></h1>
+<p>This is the documentation of the advanced csv import command <code class="docutils literal notranslate"><span class="pre">advanced_csv_import</span></code>. For the documentation of the less complicated
+bulk-upload command <code class="docutils literal notranslate"><span class="pre">bulk-add-officers</span></code> see <a class="reference internal" href="bulk_upload.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">bulk_upload</span></code></span></a>. <code class="docutils literal notranslate"><span class="pre">bulk-add-officers</span></code> accepts one csv containing information
+about the officer, including badge-number, jobs and salary and makes decisions on whether to update rows in the database
+or create new entries based on the existing data.</p>
+<p>The advanced csv upload is for the most part a way to copy data for one department into the database with as little as possible logic added on.
+So the tables provided in csv form represent the data that will be inside the sql tables after running the command.
+(With a few exceptions for many-to-many relationships and auxiliary models like location and license plates)</p>
+<section id="before-you-start">
+<h2>Before you start<a class="headerlink" href="#before-you-start" title="Link to this heading">¶</a></h2>
+<p>CSV uploads should always be tested locally or in other non-production environments, and it is strongly recommended
+to have the database backed up before running the command. The command is designed to fail early and will
+only commit the changes if it didn’t encounter any problems. The command however is pretty powerful
+and can therefore lead to data loss and inconsistencies if the provided csv files are not prepared correctly.</p>
+</section>
+<section id="explanation-of-the-command">
+<h2>Explanation of the command<a class="headerlink" href="#explanation-of-the-command" title="Link to this heading">¶</a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="w">  </span>/usr/src/app/OpenOversight$<span class="w"> </span>flask<span class="w"> </span>advanced-csv-import<span class="w"> </span>--help
+<span class="w">  </span>Usage:<span class="w"> </span>flask<span class="w"> </span>advanced-csv-import<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>DEPARTMENT_NAME<span class="w"> </span>DEPARTMENT_STATE
+
+<span class="w">    </span>Add<span class="w"> </span>or<span class="w"> </span>update<span class="w"> </span>officers,<span class="w"> </span>assignments,<span class="w"> </span>salaries,<span class="w"> </span>links<span class="w"> </span>and<span class="w"> </span>incidents<span class="w"> </span>from
+<span class="w">    </span>csv<span class="w"> </span>files<span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span>department<span class="w"> </span>using<span class="w"> </span>the<span class="w"> </span>DEPARTMENT_NAME<span class="w"> </span>and<span class="w"> </span>DEPARTMENT_STATE.
+
+<span class="w">    </span>The<span class="w"> </span>csv<span class="w"> </span>files<span class="w"> </span>are<span class="w"> </span>treated<span class="w"> </span>as<span class="w"> </span>the<span class="w"> </span><span class="nb">source</span><span class="w"> </span>of<span class="w"> </span>truth.<span class="w"> </span>Existing<span class="w"> </span>entries<span class="w"> </span>might
+<span class="w">    </span>be<span class="w"> </span>overwritten<span class="w"> </span>as<span class="w"> </span>a<span class="w"> </span>result,<span class="w"> </span>backing<span class="w"> </span>up<span class="w"> </span>the<span class="w"> </span>database<span class="w"> </span>and<span class="w"> </span>running<span class="w"> </span>the
+<span class="w">    </span><span class="nb">command</span><span class="w"> </span>locally<span class="w"> </span>first<span class="w"> </span>is<span class="w"> </span>highly<span class="w"> </span>recommended.
+
+<span class="w">    </span>See<span class="w"> </span>the<span class="w"> </span>documentation<span class="w"> </span>before<span class="w"> </span>running<span class="w"> </span>the<span class="w"> </span>command.
+
+<span class="w">  </span>Options:
+<span class="w">    </span>--officers-csv<span class="w"> </span>PATH
+<span class="w">    </span>--assignments-csv<span class="w"> </span>PATH
+<span class="w">    </span>--salaries-csv<span class="w"> </span>PATH
+<span class="w">    </span>--links-csv<span class="w"> </span>PATH
+<span class="w">    </span>--incidents-csv<span class="w"> </span>PATH
+<span class="w">    </span>--force-create<span class="w">           </span>Only<span class="w"> </span><span class="k">for</span><span class="w"> </span>development/testing!
+<span class="w">    </span>--overwrite-assignments
+<span class="w">    </span>--help<span class="w">                   </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.
+</pre></div>
+</div>
+<p>The command expects two mandatory arguments, the department name and department state.
+This is to reduce the chance of making changes to the wrong department by mixing up files.
+Then there are 5 options to include paths to officers, assignments, salaries, incidents and links csv files.
+Then there is a <code class="docutils literal notranslate"><span class="pre">--force-create</span></code> flag that allows to delete and overwrite existing entries in the database.
+This is only supposed to be used in non-production environments and to allow replication of the data of another (in most cases production)
+instance to local environments to test the import command locally first. More details on that flag at the end of the document: :ref:<code class="docutils literal notranslate"><span class="pre">ref-aci-force-create</span></code>.
+Finally, there is <code class="docutils literal notranslate"><span class="pre">--overwrite-assignments</span></code> which simplifies updating assignments. Instead of updating them,
+all assignments for the relevant officers are deleted and created new based on the provided data. This flag is only
+considered if an assignments-csv is provided and ignored otherwise. See the instructions in
+the section on assignment-csv for more details.</p>
+</section>
+<section id="general-overview-of-the-csv-import">
+<h2>General overview of the csv import<a class="headerlink" href="#general-overview-of-the-csv-import" title="Link to this heading">¶</a></h2>
+<p>The following lists the header fields that each csv can contain. If the csv includes any other fields, the command will fail.
+However, the fields are not case-sensitive and spaces are treated as <code class="docutils literal notranslate"><span class="pre">_</span></code>. So <code class="docutils literal notranslate"><span class="pre">Officer</span> <span class="pre">ID</span></code> can be used instead of <code class="docutils literal notranslate"><span class="pre">officer_id</span></code>.</p>
+<p><em>All optional fields can be left blank and will be inserted as</em> <code class="docutils literal notranslate"><span class="pre">NULL</span></code> <em>or empty string as appropriate.</em>
+<strong>Warning:</strong> When updating a record a field that is left blank might overwrite an existing record.
+This can only be prevented by not including the column in the csv at all.</p>
+<p>.. _ref-aci-formats:</p>
+<p>Formats:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">date</span></code> - The date should be provided in <code class="docutils literal notranslate"><span class="pre">YYYY-MM-DD</span></code> format.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time</span></code> - Time should be provided in <code class="docutils literal notranslate"><span class="pre">HH:MM:SS</span></code> 24h-format in the respective timezone.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DEPARTMENT_STATE</span></code> - The department state should be provided in the <a class="reference external" href="https://www.faa.gov/air_traffic/publications/atpubs/cnt_html/appendix_a.html">standard two-letter abbreviation</a> format.</p></li>
+</ul>
+</section>
+<section id="the-id-field">
+<h2>The <code class="docutils literal notranslate"><span class="pre">id</span></code> field<a class="headerlink" href="#the-id-field" title="Link to this heading">¶</a></h2>
+<p>Each csv corresponds to a table in the OpenOversight database. And each csv file has to include <code class="docutils literal notranslate"><span class="pre">id</span></code> as a field in the table.
+That field has one primary purpose: If the field is blank, it is assumed that that row is a new entry.
+If the field contains a number however, it is assumed that a record with that particular id already exists in the database
+and the record will be updated according to the provided fields. Finally, in the case of officers and incidents
+there is a third option where the <code class="docutils literal notranslate"><span class="pre">id</span></code> field can contain a string that starts with <code class="docutils literal notranslate"><span class="pre">#</span></code>. This also indicates a new record,
+but that new record can be referenced in other provided tables. (for example as the <code class="docutils literal notranslate"><span class="pre">officer_id</span></code> in the salaries csv)</p>
+</section>
+<section id="officers-csv">
+<h2>Officers csv<a class="headerlink" href="#officers-csv" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Required: <code class="docutils literal notranslate"><span class="pre">id,</span> <span class="pre">department_name,</span> <span class="pre">department_state</span></code></p></li>
+<li><p>Optional: <code class="docutils literal notranslate"><span class="pre">last_name,</span> <span class="pre">first_name,</span> <span class="pre">middle_initial,</span> <span class="pre">suffix,</span> <span class="pre">race,</span> <span class="pre">gender,</span> <span class="pre">employment_date,</span> <span class="pre">birth_year,</span> <span class="pre">unique_internal_identifier</span></code></p></li>
+<li><p>Ignored: <code class="docutils literal notranslate"><span class="pre">badge_number,</span> <span class="pre">job_title,</span> <span class="pre">most_recent_salary,</span> <span class="pre">unique_identifier</span></code> (Unused but command will not fail when field is present)</p></li>
+</ul>
+<section id="details">
+<h3>Details<a class="headerlink" href="#details" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">department_name</span></code> - Name of department exactly as it is in the server database.
+This needs to match the department name provided with the command.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">department_state</span></code> - Name of department state exactly as it is in the server database, which will be the
+<a class="reference external" href="https://www.faa.gov/air_traffic/publications/atpubs/cnt_html/appendix_a.html">standard two-letter abbreviation</a> for the department’s respective location.
+This needs to match the department state provided with the command.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">unique_internal_identifier</span></code> - A string or number that can be used to
+uniquely identify the officer, in departments in which the badge
+number stays with the officer using that number is fine. Can and should be left blank
+if no such number is available.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">first_name</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">last_name</span></code> Will be inserted into the database as is.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">middle_initial</span></code> - Usually up to one character, but can be more.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">suffix</span></code> - Choice of the following values: <code class="docutils literal notranslate"><span class="pre">Jr,</span> <span class="pre">Sr,</span> <span class="pre">II,</span> <span class="pre">III,</span> <span class="pre">IV,</span> <span class="pre">V</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gender</span></code> - One of the following values: <code class="docutils literal notranslate"><span class="pre">M</span></code>, <code class="docutils literal notranslate"><span class="pre">F</span></code>, <code class="docutils literal notranslate"><span class="pre">Other</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">race</span></code> - One of the following values: <code class="docutils literal notranslate"><span class="pre">BLACK</span></code>, <code class="docutils literal notranslate"><span class="pre">WHITE</span></code>, <code class="docutils literal notranslate"><span class="pre">ASIAN</span></code>, <code class="docutils literal notranslate"><span class="pre">HISPANIC</span></code>, <code class="docutils literal notranslate"><span class="pre">NATIVE</span> <span class="pre">AMERICAN</span></code>, <code class="docutils literal notranslate"><span class="pre">PACIFIC</span> <span class="pre">ISLANDER</span></code>, <code class="docutils literal notranslate"><span class="pre">Other</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">employment_date</span></code> - <a class="reference external" href="https://help.highbond.com/helpdocs/analytics/13/user-guide/en-us/Content/table_definition/c_formats_of_date_and_time_source_data.htm">Date</a> representing the start of employment with this department.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">birth_year</span></code> - Integer representing the birth year of the officer in a <code class="docutils literal notranslate"><span class="pre">yyyy</span></code> format.</p></li>
+</ul>
+</section>
+</section>
+<section id="assignments-csv">
+<h2>Assignments csv<a class="headerlink" href="#assignments-csv" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Required: <code class="docutils literal notranslate"><span class="pre">id,</span> <span class="pre">officer_id,</span> <span class="pre">job_title</span></code></p></li>
+<li><p>Optional: <code class="docutils literal notranslate"><span class="pre">badge_number,</span> <span class="pre">unit_id,</span> <span class="pre">unit_name,</span> <span class="pre">start_date,</span> <span class="pre">resign_date</span></code></p></li>
+</ul>
+<section id="id1">
+<h3>Details<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">officer_id</span></code> - Number referring to <code class="docutils literal notranslate"><span class="pre">id</span></code> of existing officer or string starting with <code class="docutils literal notranslate"><span class="pre">#</span></code> referring to a newly created officer in the provided officers csv.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">badge_number</span></code> - Any string that represents the star or badge number of the officer. In some departments this number changes with the assignment.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">job_title</span></code> - The job title, will be created if it does not exist.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">unit_id</span></code> - ID of existing unit within the department.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">unit_name</span></code> - Name of the unit, only used if the <code class="docutils literal notranslate"><span class="pre">unit_id</span></code> column is not provided.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">start_date</span></code> - <a class="reference external" href="https://help.highbond.com/helpdocs/analytics/13/user-guide/en-us/Content/table_definition/c_formats_of_date_and_time_source_data.htm">Start date</a> of this assignment.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resign_date</span></code> - <a class="reference external" href="https://help.highbond.com/helpdocs/analytics/13/user-guide/en-us/Content/table_definition/c_formats_of_date_and_time_source_data.htm">End date</a> of this assignment.</p></li>
+</ul>
+</section>
+<section id="special-flag">
+<h3>Special Flag<a class="headerlink" href="#special-flag" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">--overwrite-assignments</span></code> in the command can be used to not merge new with existing assignments.
+Instead, all existing assignments belonging to officers named in the <code class="docutils literal notranslate"><span class="pre">officer_id</span></code> column are deleted first,
+before the new assignments contained in the provided csv are created in the database.</p>
+<p>This should only be used if the provided csv contains both the currently in the database and additional assignments,
+or is based on a better and more complete dataset, for example after receiving a dataset for historic assignment data.</p>
+</section>
+</section>
+<section id="salaries-csv">
+<h2>Salaries csv<a class="headerlink" href="#salaries-csv" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Required: <code class="docutils literal notranslate"><span class="pre">id,</span> <span class="pre">officer_id,</span> <span class="pre">salary,</span> <span class="pre">year</span></code></p></li>
+<li><p>Optional: <code class="docutils literal notranslate"><span class="pre">overtime_pay,</span> <span class="pre">is_fiscal_year</span></code></p></li>
+</ul>
+<section id="id2">
+<h3>Details<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">officer_id</span></code> - Integer referring to <code class="docutils literal notranslate"><span class="pre">id</span></code> of existing officer or string starting with <code class="docutils literal notranslate"><span class="pre">#</span></code> referring to a newly created officer in the provided officers csv.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">salary</span></code> - Number representing the officer’s salary in the given year.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">year</span></code> - Integer, the year this salary information refers to.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">overtime_pay</span></code> - Number representing the amount of overtime payment for offer in given year.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_fiscal_year</span></code> - Boolean value, indicating whether the provided year refers to calendar year or fiscal year.
+The values <code class="docutils literal notranslate"><span class="pre">true</span></code>, <code class="docutils literal notranslate"><span class="pre">t</span></code>, <code class="docutils literal notranslate"><span class="pre">yes</span></code> and  <code class="docutils literal notranslate"><span class="pre">y</span></code> are treated as “yes, the salary is for the fiscal year”, all others (including blank) as “no”.</p></li>
+</ul>
+</section>
+</section>
+<section id="incidents-csv">
+<h2>Incidents csv<a class="headerlink" href="#incidents-csv" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Required: <code class="docutils literal notranslate"><span class="pre">id,</span> <span class="pre">department_name,</span> <span class="pre">department_state</span></code></p></li>
+<li><p>Optional: <code class="docutils literal notranslate"><span class="pre">date,</span> <span class="pre">time,</span> <span class="pre">report_number,</span> <span class="pre">description,</span> <span class="pre">street_name,</span> <span class="pre">cross_street1,</span> <span class="pre">cross_street2,</span> <span class="pre">city,</span> <span class="pre">state,</span> <span class="pre">zip_code,</span> <span class="pre">created_by,</span> <span class="pre">last_updated_by,</span> <span class="pre">officer_ids,</span> <span class="pre">license_plates</span></code></p></li>
+</ul>
+<section id="id3">
+<h3>Details<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">department_name</span></code> - Name of department exactly as in the server database.
+This needs to match the department name provided with the command.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">department_state</span></code> - Name of department state exactly as it is in the server database, which will be the
+<a class="reference external" href="https://www.faa.gov/air_traffic/publications/atpubs/cnt_html/appendix_a.html">standard two-letter abbreviation</a> for the department’s respective location.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">date</span></code> - <a class="reference external" href="https://help.highbond.com/helpdocs/analytics/13/user-guide/en-us/Content/table_definition/c_formats_of_date_and_time_source_data.htm">Date</a> of the incident</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time</span></code> - <a class="reference external" href="https://help.highbond.com/helpdocs/analytics/13/user-guide/en-us/Content/table_definition/c_formats_of_date_and_time_source_data.htm">Time</a> of the incident</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">report_number</span></code> - String representing any kind of number assigned to complaints or incidents by the police department.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code> - Text description of the incident.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">street_name</span></code> - Name of the street the incident occurred, but should not include the street number.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cross_street1</span></code>, <code class="docutils literal notranslate"><span class="pre">cross_street2</span></code> The two closest intersecting streets.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">city</span></code>, <code class="docutils literal notranslate"><span class="pre">state</span></code>, <code class="docutils literal notranslate"><span class="pre">zip_code</span></code> State needs to be in 2 letter abbreviated notation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">created_by</span></code>, <code class="docutils literal notranslate"><span class="pre">last_updated_by</span></code> - ID of existing user shown as responsible for adding this entry.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">officer_ids</span></code> - IDs of officers involved in the incident, separated by <code class="docutils literal notranslate"><span class="pre">|</span></code>.</p>
+<ul>
+<li><p>Each individual id can either be an integer referring to an existing officer or a string starting with <code class="docutils literal notranslate"><span class="pre">#</span></code> referring to a newly created officer.</p></li>
+<li><p>Example: <code class="docutils literal notranslate"><span class="pre">123|#C1|1627</span></code> for three officers, one with id 123, one with 1627 and one whose record was created in the officers csv
+and whose id-field was the string <code class="docutils literal notranslate"><span class="pre">#C1</span></code>.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">license_plates</span></code> - All license plates involved in the incident. If there is more than one, they can be separated with a <code class="docutils literal notranslate"><span class="pre">|</span></code>.</p>
+<ul>
+<li><p>Each license plate consists of the license plate number and optionally a state in abbreviated form separated by an underscore <code class="docutils literal notranslate"><span class="pre">_</span></code>.</p></li>
+<li><p>Example: <code class="docutils literal notranslate"><span class="pre">ABC123_IL|B991</span></code> for one license plate with number <code class="docutils literal notranslate"><span class="pre">ABC123</span></code> from Illinois and one with number <code class="docutils literal notranslate"><span class="pre">B991</span></code> and no associated state.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="links-csv">
+<h2>Links csv<a class="headerlink" href="#links-csv" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Required: <code class="docutils literal notranslate"><span class="pre">id,</span> <span class="pre">url</span></code></p></li>
+<li><p>Optional: <code class="docutils literal notranslate"><span class="pre">title,</span> <span class="pre">link_type,</span> <span class="pre">description,</span> <span class="pre">author,</span> <span class="pre">created_by,</span> <span class="pre">officer_ids,</span> <span class="pre">incident_ids</span></code></p></li>
+</ul>
+<section id="id4">
+<h3>Details<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">url</span></code> - Full url of the link starting with <code class="docutils literal notranslate"><span class="pre">http://</span></code> or <code class="docutils literal notranslate"><span class="pre">https://</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">title</span></code> - Text that will be displayed as the link.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code> - A short description of the link.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">link_type</span></code> - Choice of <code class="docutils literal notranslate"><span class="pre">Link</span></code>, <code class="docutils literal notranslate"><span class="pre">YouTube</span> <span class="pre">Video</span></code> and <code class="docutils literal notranslate"><span class="pre">Other</span> <span class="pre">Video</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">author</span></code> - The source or author of the linked article, report, video.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">created_by</span></code> - ID of existing user shown as responsible for adding this entry.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">officer_ids</span></code> - IDs of officer profiles this link should be visible on, separated by <code class="docutils literal notranslate"><span class="pre">|</span></code>. See same field in incidents above for more details.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">incidents_ids</span></code> - IDs of incidents this link should be associated with, separated by <code class="docutils literal notranslate"><span class="pre">|</span></code>. Just like <code class="docutils literal notranslate"><span class="pre">officer_ids</span></code> this can contain strings.
+starting with <code class="docutils literal notranslate"><span class="pre">#</span></code> to refer to an incident created in the incident csv.</p></li>
+</ul>
+</section>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h2>
+<p>Example csvs can be found in the repository under <code class="docutils literal notranslate"><span class="pre">OpenOversight/tests/test_csvs</span></code>.</p>
+</section>
+<section id="local-development-flag-force-create">
+<h2>Local development flag <code class="docutils literal notranslate"><span class="pre">--force-create</span></code><a class="headerlink" href="#local-development-flag-force-create" title="Link to this heading">¶</a></h2>
+<p>This flag changes the behavior when an integer is provided as <code class="docutils literal notranslate"><span class="pre">id</span></code>. Instead of updating an existing record,
+a new record will be created and assigned the given <code class="docutils literal notranslate"><span class="pre">id</span></code>. If a record with that <code class="docutils literal notranslate"><span class="pre">id</span></code> already exists in the
+database, it will be deleted before the new record is created.</p>
+<p>This functionality is intended to be used to import csv files downloaded from <code class="docutils literal notranslate"><span class="pre">OpenOversight</span> <span class="pre">download</span> <span class="pre">page</span> <span class="pre">&lt;/download/all&gt;</span></code>_
+to get a local copy of the production data for one department in the local development database.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2018, Lucy Parsons Labs.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/advanced_csv_import.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
